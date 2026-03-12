@@ -27,7 +27,7 @@
     <string name="image_ready_to_print">Image ready to print.</string>
     <string name="image_preparation_failed">Image preparation failed.</string>
     <string name="image_print_failed">Image print failed.</string>
-    <string name="repick_image_after_dithering_change">Pick the image again to preview the new dithering mode.</string>
+    <string name="pick_image_for_preview">Pick an image to preview the selected dithering mode.</string>
     <string name="generating_image_print_job">Generating image print job...</string>
     <string name="no_image_selected">Pick an image first.</string>
     <string name="no_image_selected_label">No image selected</string>

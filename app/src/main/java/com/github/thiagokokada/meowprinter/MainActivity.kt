@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
     private var printerManager: BlePrinterManager? = null
     private var connectedPrinterName: String? = null
+    private var selectedImageUri: Uri? = null
     private var selectedImage: PreparedPrintImage? = null
     private var currentStatus = "Pick an image and print."
     private var currentJob: Job? = null
@@ -47,24 +48,8 @@ class MainActivity : AppCompatActivity() {
             appendLog("Image picker canceled.")
             return@registerForActivityResult
         }
-
-        val ditheringMode = appSettings.selectedDitheringMode
-        runTrackedJob(getString(R.string.preparing_image)) { launchedJob ->
-            try {
-                val prepared = ImagePrintPreparer.prepare(contentResolver, uri, ditheringMode)
-                selectedImage = prepared
-                appendLog(
-                    "Prepared image ${prepared.originalWidth}x${prepared.originalHeight} -> " +
-                        "${prepared.printWidth}x${prepared.printHeight} using ${prepared.ditheringMode.displayName}."
-                )
-                currentStatus = getString(R.string.image_ready_to_print)
-            } catch (e: Exception) {
-                currentStatus = getString(R.string.image_preparation_failed)
-                appendLog("Image preparation failed: ${e.message ?: getString(R.string.unknown_error)}")
-            } finally {
-                finishTrackedJob(launchedJob)
-            }
-        }
+        selectedImageUri = uri
+        prepareSelectedImage(uri, appendPreparedLog = true)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,12 +85,13 @@ class MainActivity : AppCompatActivity() {
             val selectedMode = DitheringMode.entries[position]
             if (appSettings.selectedDitheringMode != selectedMode) {
                 appSettings.selectedDitheringMode = selectedMode
-                if (selectedImage != null) {
-                    selectedImage = null
-                    currentStatus = getString(R.string.repick_image_after_dithering_change)
-                    appendLog("Dithering mode changed. Pick the image again to preview and print with the new mode.")
+                val uri = selectedImageUri
+                if (uri != null) {
+                    prepareSelectedImage(uri, appendPreparedLog = false)
+                } else {
+                    currentStatus = getString(R.string.pick_image_for_preview)
+                    render()
                 }
-                render()
             }
         }
 
@@ -191,6 +177,30 @@ class MainActivity : AppCompatActivity() {
             return
         }
         scanAndConnect()
+    }
+
+    private fun prepareSelectedImage(uri: Uri, appendPreparedLog: Boolean) {
+        val ditheringMode = appSettings.selectedDitheringMode
+        runTrackedJob(getString(R.string.preparing_image)) { launchedJob ->
+            try {
+                val prepared = ImagePrintPreparer.prepare(contentResolver, uri, ditheringMode)
+                selectedImage = prepared
+                currentStatus = getString(R.string.image_ready_to_print)
+                if (appendPreparedLog) {
+                    appendLog(
+                        "Prepared image ${prepared.originalWidth}x${prepared.originalHeight} -> " +
+                            "${prepared.printWidth}x${prepared.printHeight} using ${prepared.ditheringMode.displayName}."
+                    )
+                } else {
+                    appendLog("Updated preview using ${prepared.ditheringMode.displayName}.")
+                }
+            } catch (e: Exception) {
+                currentStatus = getString(R.string.image_preparation_failed)
+                appendLog("Image preparation failed: ${e.message ?: getString(R.string.unknown_error)}")
+            } finally {
+                finishTrackedJob(launchedJob)
+            }
+        }
     }
 
     private suspend fun connectToPrinter(printer: DiscoveredPrinter) {
@@ -305,7 +315,7 @@ class MainActivity : AppCompatActivity() {
         binding.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
         binding.imagePreview.isVisible = selectedImage != null
 
-        binding.buttonPickImage.isEnabled = currentJob?.isActive != true
+        binding.buttonPickImage.isEnabled = true
         binding.buttonPrintImage.isEnabled = connected && selectedImage != null && currentJob?.isActive != true
     }
 

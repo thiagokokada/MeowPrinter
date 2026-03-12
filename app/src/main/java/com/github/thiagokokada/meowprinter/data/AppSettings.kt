@@ -30,6 +30,10 @@ class AppSettings(context: Context) {
         get() = preferences.getBoolean(KEY_REQUESTED_BLE_PERMISSIONS, false)
         set(value) = preferences.edit { putBoolean(KEY_REQUESTED_BLE_PERMISSIONS, value) }
 
+    var markdownDraft: String
+        get() = preferences.getString(KEY_MARKDOWN_DRAFT, DEFAULT_MARKDOWN_DRAFT).orEmpty()
+        set(value) = preferences.edit { putString(KEY_MARKDOWN_DRAFT, value) }
+
     companion object {
         private const val PREFERENCES_NAME = "meow_printer_settings"
         private const val KEY_PRINTER_ADDRESS = "selected_printer_address"
@@ -37,5 +41,11 @@ class AppSettings(context: Context) {
         private const val KEY_DITHERING_MODE = "selected_dithering_mode"
         private const val KEY_PRINT_ENERGY = "selected_print_energy"
         private const val KEY_REQUESTED_BLE_PERMISSIONS = "requested_ble_permissions"
+        private const val KEY_MARKDOWN_DRAFT = "markdown_draft"
+        private const val DEFAULT_MARKDOWN_DRAFT = """
+# Meow Printer
+
+Write Markdown here and print the preview.
+"""
     }
 }

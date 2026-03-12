@@ -58,6 +58,40 @@ object ImagePrintPreparer {
         )
     }
 
+    fun prepare(
+        sourceBitmap: Bitmap,
+        ditheringMode: DitheringMode
+    ): PreparedPrintImage {
+        val bitmap = scaleForPrint(sourceBitmap)
+        val grayscale = extractGrayscale(bitmap)
+        val rows = when (ditheringMode) {
+            DitheringMode.THRESHOLD -> thresholdRows(grayscale, bitmap.width, bitmap.height)
+            DitheringMode.FLOYD_STEINBERG -> floydSteinbergRows(grayscale, bitmap.width, bitmap.height)
+            DitheringMode.ATKINSON -> atkinsonRows(grayscale, bitmap.width, bitmap.height)
+            DitheringMode.ORDERED_4X4 -> orderedRows(grayscale, bitmap.width, bitmap.height)
+        }
+        val previewBitmap = previewBitmap(rows, bitmap.width, bitmap.height)
+
+        return PreparedPrintImage(
+            previewBitmap = previewBitmap,
+            rows = rows,
+            originalWidth = sourceBitmap.width,
+            originalHeight = sourceBitmap.height,
+            printWidth = previewBitmap.width,
+            printHeight = previewBitmap.height,
+            ditheringMode = ditheringMode
+        )
+    }
+
+    private fun scaleForPrint(bitmap: Bitmap): Bitmap {
+        if (bitmap.width == CatPrinterProtocol.PRINT_WIDTH) {
+            return bitmap
+        }
+
+        val targetHeight = max(1, bitmap.height * CatPrinterProtocol.PRINT_WIDTH / bitmap.width)
+        return Bitmap.createScaledBitmap(bitmap, CatPrinterProtocol.PRINT_WIDTH, targetHeight, true)
+    }
+
     private fun extractGrayscale(bitmap: Bitmap): FloatArray {
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)

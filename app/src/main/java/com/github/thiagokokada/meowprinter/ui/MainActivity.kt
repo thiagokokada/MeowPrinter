@@ -36,7 +36,7 @@ import java.io.File
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var binding: ActivityMainBinding
     private lateinit var scanner: BlePrinterScanner
     private lateinit var appSettings: AppSettings
@@ -241,10 +241,12 @@ class MainActivity : AppCompatActivity() {
     private fun showScreen(tabId: Int) {
         selectedTabId = tabId
         binding.imageScroll.isVisible = tabId == R.id.navigation_image
+        binding.textFragmentContainer.isVisible = tabId == R.id.navigation_text
         binding.settingsScroll.isVisible = tabId == R.id.navigation_settings
         binding.logsScroll.isVisible = tabId == SCREEN_LOGS
         binding.screenTitle.text = when (tabId) {
             R.id.navigation_image -> getString(R.string.nav_image)
+            R.id.navigation_text -> getString(R.string.nav_text)
             SCREEN_LOGS -> getString(R.string.logs_screen_title)
             else -> getString(R.string.nav_settings)
         }
@@ -400,6 +402,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun printSelectedImage() {
+        val image = selectedImage
+        if (image == null) {
+            Toast.makeText(this, R.string.no_image_selected, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        printPreparedImage(image, "selected image")
+    }
+
+    override fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String) {
         val manager = printerManager
         if (manager == null || !manager.isPrinterReady) {
             Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show()
@@ -407,19 +419,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val image = selectedImage
-        if (image == null) {
-            Toast.makeText(this, R.string.no_image_selected, Toast.LENGTH_SHORT).show()
-            return
-        }
-
         runTrackedJob(getString(R.string.generating_image_print_job)) { launchedJob ->
             try {
                 val energy = appSettings.selectedPrintEnergy
                 val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
-                val payload = CatPrinterProtocol.commandsPrintImage(image.rows, energy = energy)
+                val payload = CatPrinterProtocol.commandsPrintImage(preparedImage.rows, energy = energy)
                 appendLog(
-                    "Generated ${image.rows.size} rows and ${payload.size} bytes from selected image at $energyLabel."
+                    "Generated ${preparedImage.rows.size} rows and ${payload.size} bytes from $sourceLabel at $energyLabel."
                 )
                 currentStatus = getString(R.string.printing_selected_image_with_energy, energyLabel)
                 render()
@@ -436,6 +442,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    override fun selectedMarkdownDithering(): DitheringMode = appSettings.selectedDitheringMode
 
     private fun printTestPageFromCurrentPrinter() {
         val printerAddress = appSettings.selectedPrinterAddress

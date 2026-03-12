@@ -58,4 +58,23 @@ class MainActivityTest {
             )
         }
     }
+
+    @Test
+    fun openingTextShowsMarkdownFragment() {
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+
+        scenario?.onActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_text
+
+            assertEquals(
+                View.VISIBLE,
+                activity.findViewById<View>(R.id.text_fragment_container).visibility
+            )
+            assertEquals(
+                activity.getString(R.string.nav_text),
+                activity.findViewById<TextView>(R.id.screen_title).text.toString()
+            )
+        }
+    }
 }

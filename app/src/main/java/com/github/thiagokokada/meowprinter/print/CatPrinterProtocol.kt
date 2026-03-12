@@ -1,10 +1,10 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.print
 
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 object CatPrinterProtocol {
-    const val printWidth = 384
+    const val PRINT_WIDTH = 384
 
     val primaryServiceUuid: UUID = UUID.fromString("0000ae30-0000-1000-8000-00805f9b34fb")
     val secondaryServiceUuid: UUID = UUID.fromString("0000af30-0000-1000-8000-00805f9b34fb")
@@ -69,10 +69,10 @@ object CatPrinterProtocol {
     }
 
     fun cmdPrintRow(row: BooleanArray): ByteArray {
-        require(row.size == printWidth) { "Expected row width $printWidth but was ${row.size}" }
+        require(row.size == PRINT_WIDTH) { "Expected row width $PRINT_WIDTH but was ${row.size}" }
 
         val runLengthEncoded = runLengthEncode(row)
-        return if (runLengthEncoded.size > printWidth / 8) {
+        return if (runLengthEncoded.size > PRINT_WIDTH / 8) {
             buildRowCommand(-94, byteEncode(row))
         } else {
             buildRowCommand(-65, runLengthEncoded)
@@ -97,37 +97,36 @@ object CatPrinterProtocol {
     }
 
     private fun buildRowCommand(commandId: Int, payload: List<Int>): ByteArray {
-        val values = mutableListOf(81, 120, commandId, 0, payload.size, 0)
-        values.addAll(payload)
-        values.add(0)
-        values.add(-1)
-
-        val command = bytes(values)
+        val command = bytes(buildList {
+            addAll(listOf(81, 120, commandId, 0, payload.size, 0))
+            addAll(payload)
+            add(0)
+            add(-1)
+        })
         command[command.lastIndex - 1] = checksum(command, 6, payload.size)
         return command
     }
 
     private fun runLengthEncode(row: BooleanArray): List<Int> {
-        val result = mutableListOf<Int>()
-        var count = 0
-        var lastValue = -1
+        return buildList {
+            var count = 0
+            var lastValue = -1
 
-        row.forEach { pixel ->
-            val value = if (pixel) 1 else 0
-            if (value == lastValue) {
-                count += 1
-            } else {
-                result += encodeRunLengthRepetition(count, lastValue)
-                count = 1
+            row.forEach { pixel ->
+                val value = if (pixel) 1 else 0
+                if (value == lastValue) {
+                    count += 1
+                } else {
+                    addAll(encodeRunLengthRepetition(count, lastValue))
+                    count = 1
+                }
+                lastValue = value
             }
-            lastValue = value
-        }
 
-        if (count > 0) {
-            result += encodeRunLengthRepetition(count, lastValue)
+            if (count > 0) {
+                addAll(encodeRunLengthRepetition(count, lastValue))
+            }
         }
-
-        return result
     }
 
     private fun encodeRunLengthRepetition(count: Int, value: Int): List<Int> {
@@ -135,30 +134,30 @@ object CatPrinterProtocol {
             return emptyList()
         }
 
-        val result = mutableListOf<Int>()
-        var remaining = count
-        while (remaining > 0x7f) {
-            result += 0x7f or (value shl 7)
-            remaining -= 0x7f
+        return buildList {
+            var remaining = count
+            while (remaining > 0x7f) {
+                add(0x7f or (value shl 7))
+                remaining -= 0x7f
+            }
+            if (remaining > 0) {
+                add((value shl 7) or remaining)
+            }
         }
-        if (remaining > 0) {
-            result += (value shl 7) or remaining
-        }
-        return result
     }
 
     private fun byteEncode(row: BooleanArray): List<Int> {
-        val result = ArrayList<Int>(printWidth / 8)
-        for (chunkStart in row.indices step 8) {
-            var value = 0
-            for (bitIndex in 0 until 8) {
-                if (row[chunkStart + bitIndex]) {
-                    value = value or (1 shl bitIndex)
+        return buildList(PRINT_WIDTH / 8) {
+            for (chunkStart in row.indices step 8) {
+                var value = 0
+                for (bitIndex in 0 until 8) {
+                    if (row[chunkStart + bitIndex]) {
+                        value = value or (1 shl bitIndex)
+                    }
                 }
+                add(value)
             }
-            result += value
         }
-        return result
     }
 
     private fun checksum(data: ByteArray, start: Int, length: Int): Byte {

@@ -1,4 +1,4 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.image
 
 enum class DitheringMode(val displayName: String) {
     THRESHOLD("Mean threshold"),

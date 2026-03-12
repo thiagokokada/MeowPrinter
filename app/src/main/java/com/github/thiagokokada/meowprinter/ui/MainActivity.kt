@@ -1,4 +1,4 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.ui
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,7 +15,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.github.thiagokokada.meowprinter.R
+import com.github.thiagokokada.meowprinter.ble.BlePermissions
+import com.github.thiagokokada.meowprinter.ble.BlePrinterManager
+import com.github.thiagokokada.meowprinter.ble.BlePrinterScanner
+import com.github.thiagokokada.meowprinter.ble.DiscoveredPrinter
+import com.github.thiagokokada.meowprinter.data.AppSettings
+import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
+import com.github.thiagokokada.meowprinter.image.DitheringMode
+import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
+import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
+import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
+import com.github.thiagokokada.meowprinter.print.PrintEnergy
+import com.github.thiagokokada.meowprinter.print.PrinterTestPage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
@@ -108,7 +121,7 @@ class MainActivity : AppCompatActivity() {
         printerAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
-            mutableListOf<String>()
+            ArrayList<String>()
         ).also { adapter ->
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
@@ -124,7 +137,7 @@ class MainActivity : AppCompatActivity() {
             if (!fromUser || ignoreEnergySliderCallback) {
                 return@addOnChangeListener
             }
-            appSettings.selectedPrintEnergy = energyFromPercent(value.toInt())
+            appSettings.selectedPrintEnergy = PrintEnergy.fromPercent(value.toInt())
             render()
         }
 
@@ -334,7 +347,7 @@ class MainActivity : AppCompatActivity() {
         runTrackedJob(getString(R.string.generating_image_print_job)) { launchedJob ->
             try {
                 val energy = appSettings.selectedPrintEnergy
-                val energyLabel = formatEnergy(percentFromEnergy(energy))
+                val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
                 val payload = CatPrinterProtocol.commandsPrintImage(image.rows, energy = energy)
                 appendLog(
                     "Generated ${image.rows.size} rows and ${payload.size} bytes from selected image at $energyLabel."
@@ -377,7 +390,7 @@ class MainActivity : AppCompatActivity() {
                 val manager = BlePrinterManager(applicationContext) {}
                 try {
                     val energy = appSettings.selectedPrintEnergy
-                    val energyLabel = formatEnergy(percentFromEnergy(energy))
+                    val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
                     manager.connectAndInitialize(printer.device)
                     currentStatus = getString(R.string.testing_saved_printer_with_energy, energyLabel)
                     render()
@@ -435,8 +448,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun runTrackedJob(status: String, block: suspend (Job) -> Unit) {
         currentJob?.cancel()
-        var launchedJob: Job? = null
-        launchedJob = lifecycleScope.launch {
+        val launchedJob = lifecycleScope.launch {
             val job = currentCoroutineContext()[Job] ?: return@launch
             currentStatus = status
             binding.progressIndicator.isVisible = true
@@ -485,9 +497,9 @@ class MainActivity : AppCompatActivity() {
                 savedPrinterAddress
             )
         }
-        binding.energyValue.text = formatEnergy(percentFromEnergy(appSettings.selectedPrintEnergy))
+        binding.energyValue.text = formatEnergy(PrintEnergy.toPercent(appSettings.selectedPrintEnergy))
         ignoreEnergySliderCallback = true
-        binding.sliderEnergy.value = percentFromEnergy(appSettings.selectedPrintEnergy).toFloat()
+        binding.sliderEnergy.value = PrintEnergy.toPercent(appSettings.selectedPrintEnergy).toFloat()
         ignoreEnergySliderCallback = false
         binding.buttonScanPrinters.isEnabled = currentJob?.isActive != true
         binding.buttonSavePrinter.isEnabled = selectedPrinter != null && currentJob?.isActive != true
@@ -555,14 +567,6 @@ class MainActivity : AppCompatActivity() {
         return getString(R.string.energy_value, percent)
     }
 
-    private fun percentFromEnergy(energy: Int): Int {
-        return ((energy.coerceIn(0, MAX_PRINT_ENERGY) * 100f) / MAX_PRINT_ENERGY).toInt()
-    }
-
-    private fun energyFromPercent(percent: Int): Int {
-        return ((percent.coerceIn(0, 100) / 100f) * MAX_PRINT_ENERGY).toInt()
-    }
-
     private fun hasBlePermissions(): Boolean {
         return BlePermissions.required.all { permission ->
             ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
@@ -623,6 +627,5 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val KEY_SELECTED_TAB = "selected_tab"
         private const val SCREEN_LOGS = -1
-        private const val MAX_PRINT_ENERGY = 0xffff
     }
 }

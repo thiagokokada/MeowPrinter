@@ -1,38 +1,34 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.data
 
 import android.content.Context
+import com.github.thiagokokada.meowprinter.image.DitheringMode
+import com.github.thiagokokada.meowprinter.print.PrintEnergy
+import androidx.core.content.edit
 
 class AppSettings(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
     var selectedPrinterAddress: String?
         get() = preferences.getString(KEY_PRINTER_ADDRESS, null)
-        set(value) = preferences.edit().putString(KEY_PRINTER_ADDRESS, value).apply()
+        set(value) = preferences.edit { putString(KEY_PRINTER_ADDRESS, value) }
 
     var selectedPrinterName: String?
         get() = preferences.getString(KEY_PRINTER_NAME, null)
-        set(value) = preferences.edit().putString(KEY_PRINTER_NAME, value).apply()
+        set(value) = preferences.edit { putString(KEY_PRINTER_NAME, value) }
 
     var selectedDitheringMode: DitheringMode
         get() = DitheringMode.fromStoredValue(preferences.getString(KEY_DITHERING_MODE, null))
-        set(value) = preferences.edit().putString(KEY_DITHERING_MODE, value.name).apply()
+        set(value) = preferences.edit { putString(KEY_DITHERING_MODE, value.name) }
 
     var selectedPrintEnergy: Int
-        get() = preferences.getInt(KEY_PRINT_ENERGY, DEFAULT_PRINT_ENERGY).coerceIn(0, MAX_PRINT_ENERGY)
-        set(value) = preferences.edit()
-            .putInt(KEY_PRINT_ENERGY, value.coerceIn(0, MAX_PRINT_ENERGY))
-            .apply()
+        get() = preferences.getInt(KEY_PRINT_ENERGY, PrintEnergy.MAX_VALUE).coerceIn(0, PrintEnergy.MAX_VALUE)
+        set(value) = preferences.edit {
+            putInt(KEY_PRINT_ENERGY, value.coerceIn(0, PrintEnergy.MAX_VALUE))
+        }
 
     var hasRequestedBlePermissions: Boolean
         get() = preferences.getBoolean(KEY_REQUESTED_BLE_PERMISSIONS, false)
-        set(value) = preferences.edit().putBoolean(KEY_REQUESTED_BLE_PERMISSIONS, value).apply()
-
-    fun clearSelectedPrinter() {
-        preferences.edit()
-            .remove(KEY_PRINTER_ADDRESS)
-            .remove(KEY_PRINTER_NAME)
-            .apply()
-    }
+        set(value) = preferences.edit { putBoolean(KEY_REQUESTED_BLE_PERMISSIONS, value) }
 
     companion object {
         private const val PREFERENCES_NAME = "meow_printer_settings"
@@ -41,7 +37,5 @@ class AppSettings(context: Context) {
         private const val KEY_DITHERING_MODE = "selected_dithering_mode"
         private const val KEY_PRINT_ENERGY = "selected_print_energy"
         private const val KEY_REQUESTED_BLE_PERMISSIONS = "requested_ble_permissions"
-        private const val MAX_PRINT_ENERGY = 0xffff
-        private const val DEFAULT_PRINT_ENERGY = MAX_PRINT_ENERGY
     }
 }

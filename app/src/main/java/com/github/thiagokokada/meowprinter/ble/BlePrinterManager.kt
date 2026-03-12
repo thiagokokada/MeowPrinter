@@ -1,15 +1,17 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.ble
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
+import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
 import no.nordicsemi.android.ble.BleManager
+import no.nordicsemi.android.ble.ConnectionPriorityRequest
 import no.nordicsemi.android.ble.Request
 import no.nordicsemi.android.ble.observer.ConnectionObserver
 import java.io.IOException
@@ -120,7 +122,7 @@ class BlePrinterManager(
                 .with { _, mtu -> negotiatedMtu = mtu }
                 .fail { _, _ -> negotiatedMtu = DEFAULT_MTU }
                 .enqueue()
-            requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH).enqueue()
+            requestConnectionPriority(ConnectionPriorityRequest.CONNECTION_PRIORITY_HIGH).enqueue()
         }
 
         override fun onServicesInvalidated() {
@@ -131,7 +133,7 @@ class BlePrinterManager(
     }
 
     private suspend fun await(request: Request) {
-        suspendCancellableCoroutine<Unit> { continuation ->
+        suspendCancellableCoroutine { continuation ->
             request
                 .done {
                     if (continuation.isActive) {

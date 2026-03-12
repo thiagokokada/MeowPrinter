@@ -1,7 +1,9 @@
 package com.github.thiagokokada.meowprinter
 
+import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CatPrinterProtocolTest {
@@ -23,7 +25,7 @@ class CatPrinterProtocolTest {
 
     @Test
     fun cmdPrintRowFallsBackToByteEncodingForAlternatingPixels() {
-        val row = BooleanArray(CatPrinterProtocol.printWidth) { index -> index % 2 == 0 }
+        val row = BooleanArray(CatPrinterProtocol.PRINT_WIDTH) { index -> index % 2 == 0 }
         val expected = ByteArray(56).apply {
             this[0] = 81
             this[1] = 120
@@ -41,7 +43,7 @@ class CatPrinterProtocolTest {
 
     @Test
     fun cmdPrintRowUsesRunLengthEncodingWhenSmaller() {
-        val row = BooleanArray(CatPrinterProtocol.printWidth) { true }
+        val row = BooleanArray(CatPrinterProtocol.PRINT_WIDTH) { true }
         assertArrayEquals(
             byteArrayOf(81, 120, -65, 0, 4, 0, -1, -1, -1, -125, -83, -1),
             CatPrinterProtocol.cmdPrintRow(row)
@@ -50,8 +52,8 @@ class CatPrinterProtocolTest {
 
     @Test
     fun commandsPrintImageMatchesPythonReferencePrefix() {
-        val row = BooleanArray(CatPrinterProtocol.printWidth) { index -> index % 2 == 0 }
-        val blankRow = BooleanArray(CatPrinterProtocol.printWidth)
+        val row = BooleanArray(CatPrinterProtocol.PRINT_WIDTH) { index -> index % 2 == 0 }
+        val blankRow = BooleanArray(CatPrinterProtocol.PRINT_WIDTH)
         val payload = CatPrinterProtocol.commandsPrintImage(listOf(row, blankRow), energy = 0x1234)
 
         assertEquals(191, payload.size)
@@ -64,6 +66,24 @@ class CatPrinterProtocolTest {
                 81, 120, -90
             ),
             payload.copyOf(40)
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun cmdPrintRowRejectsUnexpectedWidth() {
+        CatPrinterProtocol.cmdPrintRow(BooleanArray(CatPrinterProtocol.PRINT_WIDTH - 1))
+    }
+
+    @Test
+    fun commandsPrintImageEndsWithDeviceStateQuery() {
+        val payload = CatPrinterProtocol.commandsPrintImage(
+            listOf(BooleanArray(CatPrinterProtocol.PRINT_WIDTH))
+        )
+
+        assertTrue(
+            payload.takeLast(9).toByteArray().contentEquals(
+                byteArrayOf(81, 120, -93, 0, 1, 0, 0, 0, -1)
+            )
         )
     }
 }

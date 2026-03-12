@@ -1,4 +1,4 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.ui
 
 import android.view.View
 import androidx.core.graphics.Insets
@@ -31,17 +31,3 @@ fun View.applySideAndBottomSystemBarsPadding() {
     ViewCompat.requestApplyInsets(this)
 }
 
-fun View.applySystemBarsPadding() {
-    val initialPadding = Insets.of(paddingLeft, paddingTop, paddingRight, paddingBottom)
-    ViewCompat.setOnApplyWindowInsetsListener(this) { view, windowInsets ->
-        val bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-        view.updatePadding(
-            left = initialPadding.left + bars.left,
-            top = initialPadding.top + bars.top,
-            right = initialPadding.right + bars.right,
-            bottom = initialPadding.bottom + bars.bottom
-        )
-        windowInsets
-    }
-    ViewCompat.requestApplyInsets(this)
-}

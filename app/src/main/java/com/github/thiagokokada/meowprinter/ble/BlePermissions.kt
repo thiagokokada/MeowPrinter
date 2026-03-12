@@ -1,4 +1,4 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.ble
 
 import android.Manifest
 

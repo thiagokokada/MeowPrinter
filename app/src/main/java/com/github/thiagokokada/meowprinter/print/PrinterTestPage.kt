@@ -1,4 +1,4 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.print
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -8,12 +8,13 @@ import android.graphics.Typeface
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
+import androidx.core.graphics.createBitmap
 
 object PrinterTestPage {
     fun createRows(): List<BooleanArray> {
-        val width = CatPrinterProtocol.printWidth
+        val width = CatPrinterProtocol.PRINT_WIDTH
         val height = 240
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap)
         canvas.drawColor(Color.WHITE)
 

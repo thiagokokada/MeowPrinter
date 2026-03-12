@@ -1,4 +1,4 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.ble
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
@@ -10,6 +10,7 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException

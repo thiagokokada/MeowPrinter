@@ -1,11 +1,13 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.image
 
 import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.net.Uri
+import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import kotlin.math.max
+import androidx.core.graphics.createBitmap
 
 data class PreparedPrintImage(
     val previewBitmap: Bitmap,
@@ -30,8 +32,8 @@ object ImagePrintPreparer {
             originalWidth = info.size.width
             originalHeight = info.size.height
 
-            val targetHeight = max(1, originalHeight * CatPrinterProtocol.printWidth / originalWidth)
-            decoder.setTargetSize(CatPrinterProtocol.printWidth, targetHeight)
+            val targetHeight = max(1, originalHeight * CatPrinterProtocol.PRINT_WIDTH / originalWidth)
+            decoder.setTargetSize(CatPrinterProtocol.PRINT_WIDTH, targetHeight)
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             decoder.isMutableRequired = false
         }
@@ -128,7 +130,7 @@ object ImagePrintPreparer {
     }
 
     private fun previewBitmap(rows: List<BooleanArray>, width: Int, height: Int): Bitmap {
-        val preview = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val preview = createBitmap(width, height)
         val pixels = IntArray(width)
         rows.forEachIndexed { y, row ->
             for (x in 0 until width) {

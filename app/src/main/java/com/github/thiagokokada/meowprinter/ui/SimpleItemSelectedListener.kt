@@ -1,4 +1,4 @@
-package com.github.thiagokokada.meowprinter
+package com.github.thiagokokada.meowprinter.ui
 
 import android.view.View
 import android.widget.AdapterView

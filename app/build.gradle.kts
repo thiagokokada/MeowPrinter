@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.ucrop)
     implementation(libs.markwon.core)
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.test.core)

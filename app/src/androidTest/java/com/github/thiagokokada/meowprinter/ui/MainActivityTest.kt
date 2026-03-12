@@ -75,6 +75,10 @@ class MainActivityTest {
                 activity.getString(R.string.nav_text),
                 activity.findViewById<TextView>(R.id.screen_title).text.toString()
             )
+            assertEquals(
+                View.VISIBLE,
+                activity.findViewById<View>(R.id.markdown_input).visibility
+            )
         }
     }
 }

@@ -1,9 +1,34 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.MeowPrinter" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/meow_primary</item>
+        <item name="colorOnPrimary">@color/meow_on_primary</item>
+        <item name="colorPrimaryContainer">@color/meow_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/meow_on_primary_container</item>
+        <item name="colorSecondary">@color/meow_secondary</item>
+        <item name="colorOnSecondary">@color/meow_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/meow_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/meow_on_secondary_container</item>
+        <item name="colorTertiary">@color/meow_tertiary</item>
+        <item name="colorOnTertiary">@color/meow_on_tertiary</item>
+        <item name="android:colorBackground">@color/meow_background</item>
+        <item name="colorOnBackground">@color/meow_on_background</item>
+        <item name="colorSurface">@color/meow_surface</item>
+        <item name="colorOnSurface">@color/meow_on_surface</item>
+        <item name="colorSurfaceVariant">@color/meow_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/meow_on_surface_variant</item>
+        <item name="colorOutline">@color/meow_outline</item>
+        <item name="colorOutlineVariant">@color/meow_outline_variant</item>
+        <item name="colorSurfaceContainerHighest">@color/meow_surface_container_highest</item>
+        <item name="bottomNavigationStyle">@style/Widget.MeowPrinter.BottomNavigationView</item>
     </style>
 
     <style name="Theme.MeowPrinter" parent="Base.Theme.MeowPrinter" />
+
+    <style name="Widget.MeowPrinter.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
+        <item name="itemActiveIndicatorStyle">@style/Widget.MeowPrinter.BottomNavigation.ActiveIndicator</item>
+    </style>
+
+    <style name="Widget.MeowPrinter.BottomNavigation.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/meow_primary_container</item>
+    </style>
 </resources>

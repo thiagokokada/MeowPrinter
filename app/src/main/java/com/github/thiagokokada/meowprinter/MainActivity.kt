@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scanner: BlePrinterScanner
     private lateinit var appSettings: AppSettings
     private lateinit var ditheringAdapter: ArrayAdapter<String>
+    private lateinit var printerAdapter: ArrayAdapter<String>
 
     private var printerManager: BlePrinterManager? = null
     private var connectedPrinterName: String? = null
@@ -31,12 +33,16 @@ class MainActivity : AppCompatActivity() {
     private var selectedImage: PreparedPrintImage? = null
     private var currentStatus = "Pick an image and print."
     private var currentJob: Job? = null
+    private var discoveredPrinters: List<DiscoveredPrinter> = emptyList()
+    private var selectedTabId: Int = R.id.navigation_image
+    private var selectedScannedPrinterIndex: Int? = null
+    private var ignorePrinterSelectionCallback = false
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
         if (hasBlePermissions()) {
-            maybeAutoConnect()
+            maybeAutoConnect(force = true)
         }
         render()
     }
@@ -60,15 +66,18 @@ class MainActivity : AppCompatActivity() {
 
         scanner = BlePrinterScanner(applicationContext)
         appSettings = AppSettings(applicationContext)
+        selectedTabId = savedInstanceState?.getInt(KEY_SELECTED_TAB, R.id.navigation_image)
+            ?: R.id.navigation_image
 
         binding.toolbar.applyTopSystemBarPadding()
-        binding.contentContainer.applySideAndBottomSystemBarsPadding()
-        binding.toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_settings) {
-                startActivity(Intent(this, SettingsActivity::class.java))
-                true
-            } else {
-                false
+        binding.imageContent.applySideAndBottomSystemBarsPadding()
+        binding.settingsContent.applySideAndBottomSystemBarsPadding()
+        binding.logsContent.applySideAndBottomSystemBarsPadding()
+        binding.bottomNavigation.applySideAndBottomSystemBarsPadding()
+        binding.appTitle.text = getString(R.string.app_name)
+        binding.toolbar.setNavigationOnClickListener {
+            if (selectedTabId == SCREEN_LOGS) {
+                showScreen(R.id.navigation_settings)
             }
         }
 
@@ -95,6 +104,22 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        printerAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            mutableListOf<String>()
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        binding.spinnerPrinters.adapter = printerAdapter
+        binding.spinnerPrinters.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            if (ignorePrinterSelectionCallback || position !in discoveredPrinters.indices) {
+                return@SimpleItemSelectedListener
+            }
+            selectedScannedPrinterIndex = position
+            render()
+        }
+
         binding.buttonPickImage.setOnClickListener {
             imagePickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -103,7 +128,33 @@ class MainActivity : AppCompatActivity() {
         binding.buttonPrintImage.setOnClickListener {
             printSelectedImage()
         }
+        binding.buttonRefreshStatus.setOnClickListener {
+            ensureBlePermissionsThen { maybeAutoConnect(force = true) }
+        }
+        binding.buttonTestPrint.setOnClickListener {
+            ensureBlePermissionsThen { printTestPageFromCurrentPrinter() }
+        }
+        binding.buttonOpenLogs.setOnClickListener {
+            showScreen(SCREEN_LOGS)
+        }
+        binding.buttonClearLogs.setOnClickListener {
+            LogStore.clear()
+            render()
+        }
+        binding.buttonScanPrinters.setOnClickListener {
+            ensureBlePermissionsThen { scanPrinters() }
+        }
+        binding.buttonSavePrinter.setOnClickListener {
+            saveSelectedPrinter()
+        }
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            showScreen(item.itemId)
+            true
+        }
+        binding.bottomNavigation.selectedItemId =
+            if (selectedTabId == SCREEN_LOGS) R.id.navigation_settings else selectedTabId
 
+        showScreen(selectedTabId)
         render()
     }
 
@@ -122,6 +173,30 @@ class MainActivity : AppCompatActivity() {
         currentJob?.cancel()
         printerManager?.release()
         super.onDestroy()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(KEY_SELECTED_TAB, selectedTabId)
+    }
+
+    private fun showScreen(tabId: Int) {
+        selectedTabId = tabId
+        binding.imageScroll.isVisible = tabId == R.id.navigation_image
+        binding.settingsScroll.isVisible = tabId == R.id.navigation_settings
+        binding.logsScroll.isVisible = tabId == SCREEN_LOGS
+        binding.screenTitle.text = when (tabId) {
+            R.id.navigation_image -> getString(R.string.nav_image)
+            SCREEN_LOGS -> getString(R.string.logs_screen_title)
+            else -> getString(R.string.nav_settings)
+        }
+        val showBack = tabId == SCREEN_LOGS
+        binding.toolbar.navigationIcon = if (showBack) {
+            AppCompatResources.getDrawable(this, androidx.appcompat.R.drawable.abc_ic_ab_back_material)
+        } else {
+            null
+        }
+        render()
     }
 
     private fun scanAndConnect() {
@@ -159,13 +234,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun maybeAutoConnect() {
-        if (currentJob?.isActive == true) {
-            return
-        }
-        if (printerManager?.isPrinterReady == true) {
-            return
-        }
+    private fun maybeAutoConnect(force: Boolean = false) {
+        if (currentJob?.isActive == true) return
+        if (!force && printerManager?.isPrinterReady == true) return
         if (!hasBlePermissions()) {
             currentStatus = getString(R.string.bluetooth_permission_missing_idle)
             render()
@@ -175,6 +246,9 @@ class MainActivity : AppCompatActivity() {
             currentStatus = getString(R.string.select_printer_in_settings)
             render()
             return
+        }
+        if (force) {
+            disconnectForegroundConnection()
         }
         scanAndConnect()
     }
@@ -239,7 +313,7 @@ class MainActivity : AppCompatActivity() {
         val manager = printerManager
         if (manager == null || !manager.isPrinterReady) {
             Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show()
-            ensureBlePermissionsThen { maybeAutoConnect() }
+            ensureBlePermissionsThen { maybeAutoConnect(force = true) }
             return
         }
 
@@ -269,12 +343,73 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun printTestPageFromCurrentPrinter() {
+        val printerAddress = appSettings.selectedPrinterAddress
+        if (printerAddress == null) {
+            Toast.makeText(this, R.string.select_printer_in_settings, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!scanner.isBluetoothEnabled()) {
+            Toast.makeText(this, R.string.bluetooth_disabled, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        runTrackedJob(getString(R.string.testing_saved_printer)) { launchedJob ->
+            try {
+                val printer = scanner.findFirstCompatiblePrinter(preferredAddress = printerAddress)
+                if (printer == null) {
+                    currentStatus = getString(R.string.saved_printer_not_found)
+                    return@runTrackedJob
+                }
+
+                val manager = BlePrinterManager(applicationContext) {}
+                try {
+                    manager.connectAndInitialize(printer.device)
+                    val payload = CatPrinterProtocol.commandsPrintImage(PrinterTestPage.createRows())
+                    manager.print(payload)
+                    appendLog("Test page printed on ${printer.displayName}.")
+                    currentStatus = getString(R.string.test_page_sent)
+                } finally {
+                    manager.release()
+                }
+            } catch (e: Exception) {
+                currentStatus = getString(R.string.scan_failed_message, e.message ?: getString(R.string.unknown_error))
+            } finally {
+                finishTrackedJob(launchedJob)
+            }
+        }
+    }
+
+    private fun scanPrinters() {
+        if (!scanner.isBluetoothEnabled()) {
+            Toast.makeText(this, R.string.bluetooth_disabled, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        runTrackedJob(getString(R.string.scanning_printers)) { launchedJob ->
+            try {
+                discoveredPrinters = scanner.scanCompatiblePrinters()
+                selectedScannedPrinterIndex = discoveredPrinters.indexOfFirst {
+                    it.device.address == appSettings.selectedPrinterAddress
+                }.takeIf { it >= 0 } ?: discoveredPrinters.indices.firstOrNull()
+                currentStatus = if (discoveredPrinters.isEmpty()) {
+                    getString(R.string.no_printers_found)
+                } else {
+                    getString(R.string.printers_found, discoveredPrinters.size)
+                }
+                renderPrinterChoices()
+            } catch (e: Exception) {
+                currentStatus = getString(R.string.scan_failed_message, e.message ?: getString(R.string.unknown_error))
+            } finally {
+                finishTrackedJob(launchedJob)
+            }
+        }
+    }
+
     private fun disconnectForegroundConnection() {
-        currentJob?.cancel()
         printerManager?.release()
         printerManager = null
         connectedPrinterName = null
-        currentStatus = getString(R.string.disconnected)
         binding.progressIndicator.isVisible = false
         render()
     }
@@ -306,7 +441,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun render() {
         val connected = printerManager?.isPrinterReady == true
-        binding.printerValue.text = connectedPrinterName ?: appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)
+        val printerName = connectedPrinterName ?: appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)
+        val savedPrinterAddress = appSettings.selectedPrinterAddress
+        val selectedPrinter = selectedScannedPrinterIndex?.takeIf { it in discoveredPrinters.indices }?.let(discoveredPrinters::get)
+
+        binding.printerValue.text = printerName
         binding.connectionBadge.text = if (connected) getString(R.string.connected) else getString(R.string.disconnected)
         binding.statusValue.text = currentStatus
         binding.imageSelectionValue.text = selectedImage?.let { prepared ->
@@ -314,9 +453,79 @@ class MainActivity : AppCompatActivity() {
         } ?: getString(R.string.no_image_selected_label)
         binding.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
         binding.imagePreview.isVisible = selectedImage != null
-
         binding.buttonPickImage.isEnabled = true
+        binding.buttonRefreshStatus.isEnabled = currentJob?.isActive != true
         binding.buttonPrintImage.isEnabled = connected && selectedImage != null && currentJob?.isActive != true
+
+        binding.savedPrinterValue.text = if (savedPrinterAddress == null) {
+            getString(R.string.no_printer_selected)
+        } else {
+            getString(
+                R.string.saved_printer_description,
+                appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected),
+                savedPrinterAddress
+            )
+        }
+        binding.buttonScanPrinters.isEnabled = currentJob?.isActive != true
+        binding.buttonSavePrinter.isEnabled = selectedPrinter != null && currentJob?.isActive != true
+        binding.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && currentJob?.isActive != true
+        binding.buttonOpenLogs.isEnabled = true
+        binding.scanStatus.text = when {
+            discoveredPrinters.isNotEmpty() -> getString(R.string.printers_found, discoveredPrinters.size)
+            selectedTabId == R.id.navigation_settings -> currentStatus
+            else -> ""
+        }
+
+        binding.logsValue.text = LogStore.asText().ifBlank { getString(R.string.no_logs_yet) }
+        renderPrinterChoices()
+    }
+
+    private fun renderPrinterChoices() {
+        ignorePrinterSelectionCallback = true
+        printerAdapter.clear()
+        printerAdapter.addAll(
+            if (discoveredPrinters.isEmpty()) {
+                listOf(getString(R.string.no_printers_found))
+            } else {
+                discoveredPrinters.map { printer ->
+                    getString(
+                        R.string.nearby_printer_item,
+                        printer.displayName,
+                        printer.device.address
+                    )
+                }
+            }
+        )
+        printerAdapter.notifyDataSetChanged()
+
+        if (discoveredPrinters.isEmpty()) {
+            binding.spinnerPrinters.setSelection(0, false)
+        } else {
+            val index = selectedScannedPrinterIndex?.takeIf { it in discoveredPrinters.indices }
+                ?: discoveredPrinters.indexOfFirst { it.device.address == appSettings.selectedPrinterAddress }
+                    .takeIf { it >= 0 }
+                ?: 0
+            binding.spinnerPrinters.setSelection(index, false)
+        }
+        ignorePrinterSelectionCallback = false
+    }
+
+    private fun saveSelectedPrinter() {
+        val printer = selectedScannedPrinterIndex
+            ?.takeIf { it in discoveredPrinters.indices }
+            ?.let(discoveredPrinters::get)
+        if (printer == null) {
+            Toast.makeText(this, R.string.no_scanned_printer_selected, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (appSettings.selectedPrinterAddress != printer.device.address) {
+            appSettings.selectedPrinterAddress = printer.device.address
+            appSettings.selectedPrinterName = printer.displayName
+            Toast.makeText(this, getString(R.string.printer_saved, printer.displayName), Toast.LENGTH_SHORT).show()
+            maybeAutoConnect(force = true)
+        }
+        render()
     }
 
     private fun hasBlePermissions(): Boolean {
@@ -374,5 +583,10 @@ class MainActivity : AppCompatActivity() {
             Uri.fromParts("package", packageName, null)
         )
         startActivity(intent)
+    }
+
+    companion object {
+        private const val KEY_SELECTED_TAB = "selected_tab"
+        private const val SCREEN_LOGS = -1
     }
 }

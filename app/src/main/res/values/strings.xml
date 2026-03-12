@@ -4,10 +4,17 @@
     <string name="main_screen_subtitle">Pick an image, preview it with the selected dithering method, and print it to the saved printer.</string>
     <string name="settings_title">Printer Settings</string>
     <string name="settings_subtitle">Choose which printer to use, run a quick test page, and inspect the session logs.</string>
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_subtitle">Inspect recent Bluetooth, scan, and print events if you need to troubleshoot printer behavior.</string>
+    <string name="nav_image">Image</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_logs">Logs</string>
+    <string name="logs_screen_title">Session Logs</string>
     <string name="printer_label">Printer</string>
     <string name="status_label">Status</string>
     <string name="dithering_label">Dithering</string>
     <string name="saved_printer_label">Saved printer</string>
+    <string name="printer_picker_label">Nearby printers</string>
     <string name="permissions_dialog_title">Bluetooth permission needed</string>
     <string name="permissions_rationale_long">Bluetooth permissions are required so the app can discover your BLE printer, connect to it, and receive print status updates.</string>
     <string name="permissions_open_settings">Bluetooth permissions were denied. Open the app settings and allow Bluetooth access so connecting and printing can work.</string>
@@ -44,9 +51,15 @@
     <string name="printing_selected_image">Printing selected image...</string>
     <string name="scan_failed">Scan failed.</string>
     <string name="scan_printers">Scan for printers</string>
+    <string name="scan">Scan nearby</string>
     <string name="scanning_printers">Scanning for compatible printers...</string>
     <string name="scanning_for_saved_printer">Scanning for the saved printer...</string>
     <string name="forget_printer">Forget printer</string>
+    <string name="save_selected_printer">Use selected printer</string>
+    <string name="open_logs">Open session log</string>
+    <string name="no_scanned_printer_selected">Scan and choose a printer first.</string>
+    <string name="saved_printer_description">%1$s\n%2$s</string>
+    <string name="nearby_printer_item">%1$s • %2$s</string>
     <string name="no_printer_selected">None selected</string>
     <string name="no_printers_found">No compatible printers found.</string>
     <string name="printers_found">%1$d compatible printers found.</string>
@@ -55,5 +68,7 @@
     <string name="bluetooth_disabled">Bluetooth is disabled.</string>
     <string name="testing_saved_printer">Connecting and sending a test page...</string>
     <string name="test_page_sent">Test page sent.</string>
+    <string name="logs_subtitle">Recent connection, scan, image-processing, and printing events.</string>
+    <string name="refresh">Refresh</string>
     <string name="unknown_error">unknown error</string>
 </resources>

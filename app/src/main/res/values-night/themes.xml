@@ -1,7 +1,24 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.MeowPrinter" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/meow_primary_container</item>
+        <item name="colorOnPrimary">@color/meow_on_primary_container</item>
+        <item name="colorPrimaryContainer">@color/meow_primary</item>
+        <item name="colorOnPrimaryContainer">@color/meow_on_primary</item>
+        <item name="colorSecondary">@color/meow_secondary_container</item>
+        <item name="colorOnSecondary">@color/meow_on_secondary_container</item>
+        <item name="colorSecondaryContainer">@color/meow_secondary</item>
+        <item name="colorOnSecondaryContainer">@color/meow_on_secondary</item>
+        <item name="colorTertiary">@color/meow_tertiary</item>
+        <item name="colorOnTertiary">@color/meow_on_tertiary</item>
+        <item name="android:colorBackground">#141311</item>
+        <item name="colorOnBackground">#F1E9E2</item>
+        <item name="colorSurface">#1B1A18</item>
+        <item name="colorOnSurface">#F1E9E2</item>
+        <item name="colorSurfaceVariant">#4C453F</item>
+        <item name="colorOnSurfaceVariant">#D5C4BA</item>
+        <item name="colorOutline">#9F8D82</item>
+        <item name="colorOutlineVariant">#504842</item>
+        <item name="colorSurfaceContainerHighest">#2A2825</item>
+        <item name="bottomNavigationStyle">@style/Widget.MeowPrinter.BottomNavigationView</item>
     </style>
 </resources>

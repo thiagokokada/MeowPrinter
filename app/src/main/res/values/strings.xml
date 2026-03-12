@@ -9,6 +9,12 @@
     <string name="scan_and_connect">Scan and connect</string>
     <string name="disconnect">Disconnect</string>
     <string name="print_test_page">Print test page</string>
+    <string name="pick_image">Pick image</string>
+    <string name="print_image">Print image</string>
+    <string name="image_selection_label">Selected image</string>
+    <string name="image_preview">Prepared image preview</string>
+    <string name="no_image_selected">Pick an image first.</string>
+    <string name="no_image_selected_label">None</string>
     <string name="clear_log">Clear log</string>
     <string name="log_label">Log</string>
     <string name="not_connected">Connect to a printer first.</string>

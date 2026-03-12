@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -20,6 +21,7 @@ class MainActivity : AppCompatActivity() {
 
     private var printerManager: BlePrinterManager? = null
     private var printerName: String? = null
+    private var selectedImage: PreparedPrintImage? = null
     private var connectionLabel = "Disconnected"
     private var currentStatus = "Request BLE permissions to start."
     private var currentJob: Job? = null
@@ -33,6 +35,42 @@ class MainActivity : AppCompatActivity() {
             appendLog("BLE permissions are required to scan and connect.")
         }
         render()
+    }
+
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri == null) {
+            appendLog("Image picker canceled.")
+            return@registerForActivityResult
+        }
+
+        currentJob?.cancel()
+        var launchedJob: Job? = null
+        launchedJob = lifecycleScope.launch {
+            setBusy("Preparing image...")
+            try {
+                val prepared = ImagePrintPreparer.prepare(contentResolver, uri)
+                selectedImage = prepared
+                appendLog(
+                    "Prepared image ${prepared.originalWidth}x${prepared.originalHeight} -> " +
+                        "${prepared.printWidth}x${prepared.printHeight}."
+                )
+                currentStatus = "Image ready to print."
+                render()
+            } catch (e: Exception) {
+                currentStatus = "Image preparation failed."
+                appendLog("Image preparation failed: ${e.message ?: "unknown error"}")
+                render()
+            } finally {
+                if (currentJob === launchedJob) {
+                    currentJob = null
+                }
+                binding.progressIndicator.isVisible = false
+                render()
+            }
+        }
+        currentJob = launchedJob
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,8 +95,16 @@ class MainActivity : AppCompatActivity() {
         binding.buttonDisconnect.setOnClickListener {
             disconnectPrinter()
         }
+        binding.buttonPickImage.setOnClickListener {
+            imagePickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        }
         binding.buttonPrintTest.setOnClickListener {
             printTestPage()
+        }
+        binding.buttonPrintImage.setOnClickListener {
+            printSelectedImage()
         }
         binding.buttonClearLog.setOnClickListener {
             binding.logView.text = ""
@@ -188,6 +234,49 @@ class MainActivity : AppCompatActivity() {
         currentJob = launchedJob
     }
 
+    private fun printSelectedImage() {
+        val manager = printerManager
+        if (manager == null || !manager.isPrinterReady) {
+            Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val image = selectedImage
+        if (image == null) {
+            Toast.makeText(this, R.string.no_image_selected, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        currentJob?.cancel()
+        var launchedJob: Job? = null
+        launchedJob = lifecycleScope.launch {
+            setBusy("Generating image print job...")
+            try {
+                val payload = CatPrinterProtocol.commandsPrintImage(image.rows)
+                appendLog("Generated ${image.rows.size} rows and ${payload.size} bytes from selected image.")
+                currentStatus = "Printing selected image..."
+                render()
+
+                manager.print(payload)
+
+                currentStatus = "Printer is ready again."
+                appendLog("Image print completed successfully.")
+                render()
+            } catch (e: Exception) {
+                currentStatus = "Image print failed."
+                appendLog("Image print failed: ${e.message ?: "unknown error"}")
+                render()
+            } finally {
+                if (currentJob === launchedJob) {
+                    currentJob = null
+                }
+                binding.progressIndicator.isVisible = false
+                render()
+            }
+        }
+        currentJob = launchedJob
+    }
+
     private fun disconnectPrinter() {
         currentJob?.cancel()
         printerManager?.release()
@@ -225,11 +314,18 @@ class MainActivity : AppCompatActivity() {
         binding.deviceValue.text = printerName ?: "None"
         binding.connectionValue.text = connectionLabel
         binding.statusValue.text = currentStatus
+        binding.imageSelectionValue.text = selectedImage?.let { prepared ->
+            "${prepared.printWidth}x${prepared.printHeight} ready"
+        } ?: getString(R.string.no_image_selected_label)
+        binding.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
+        binding.imagePreview.isVisible = selectedImage != null
 
         binding.buttonPermissions.isEnabled = !hasPermissions
         binding.buttonScanConnect.isEnabled = hasPermissions && currentJob?.isActive != true && !connected
         binding.buttonDisconnect.isEnabled = connected
+        binding.buttonPickImage.isEnabled = currentJob?.isActive != true
         binding.buttonPrintTest.isEnabled = connected && currentJob?.isActive != true
+        binding.buttonPrintImage.isEnabled = connected && selectedImage != null && currentJob?.isActive != true
     }
 
     private fun hasBlePermissions(): Boolean {

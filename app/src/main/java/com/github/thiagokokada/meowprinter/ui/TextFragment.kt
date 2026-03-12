@@ -3,10 +3,12 @@ package com.github.thiagokokada.meowprinter.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,7 +31,9 @@ class TextFragment : Fragment() {
     private var host: Host? = null
     private lateinit var appSettings: AppSettings
     private lateinit var markwon: Markwon
+    private lateinit var textSizeAdapter: ArrayAdapter<String>
     private var suppressEditorCallback = false
+    private var suppressTextSizeCallback = false
 
     private val importMarkdownLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -97,6 +101,23 @@ class TextFragment : Fragment() {
         binding?.textContent?.applySideAndBottomSystemBarsPadding()
 
         val initialMarkdown = appSettings.markdownDraft
+        textSizeAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            TextSizeOption.entries.map { it.displayName }
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        binding?.spinnerTextSize?.adapter = textSizeAdapter
+        binding?.spinnerTextSize?.setSelection(appSettings.markdownTextSize.ordinal, false)
+        binding?.spinnerTextSize?.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            if (suppressTextSizeCallback) {
+                return@SimpleItemSelectedListener
+            }
+            appSettings.markdownTextSize = TextSizeOption.entries[position]
+            renderMarkdown(binding?.markdownInput?.text?.toString().orEmpty())
+        }
+
         suppressEditorCallback = true
         binding?.markdownInput?.setText(initialMarkdown)
         suppressEditorCallback = false
@@ -142,6 +163,7 @@ class TextFragment : Fragment() {
 
     private fun renderMarkdown(markdown: String) {
         val preview = binding?.markdownPreview ?: return
+        preview.textSize = appSettings.markdownTextSize.previewSp
         markwon.setMarkdown(preview, markdown.ifBlank { " " })
     }
 
@@ -152,7 +174,7 @@ class TextFragment : Fragment() {
             return
         }
 
-        val renderedBitmap = renderPreviewToBitmap(markdown)
+        val renderedBitmap = renderPrintBitmap(markdown)
         val preparedImage = ImagePrintPreparer.prepare(
             renderedBitmap,
             host?.selectedMarkdownDithering() ?: appSettings.selectedDitheringMode
@@ -160,29 +182,52 @@ class TextFragment : Fragment() {
         host?.printPreparedImage(preparedImage, "Markdown")
     }
 
-    private fun renderPreviewToBitmap(markdown: String): Bitmap {
-        val preview = binding?.markdownPreview ?: error("Preview is unavailable.")
-        val previewWidth = preview.width.takeIf { it > 0 }
-            ?: resources.displayMetrics.widthPixels - preview.paddingLeft - preview.paddingRight
-
-        val renderView = TextView(requireContext()).apply {
-            layoutParams = ViewGroup.LayoutParams(previewWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
-            setPadding(preview.paddingLeft, preview.paddingTop, preview.paddingRight, preview.paddingBottom)
-            setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge)
-            setTextColor(preview.currentTextColor)
-            setBackgroundColor(android.graphics.Color.WHITE)
+    private fun renderPrintBitmap(markdown: String): Bitmap {
+        val renderView = createMarkdownRenderView(
+            markdown = markdown,
+            width = PRINT_RENDER_WIDTH_PX,
+            textColor = Color.BLACK,
+            backgroundColor = Color.WHITE,
+            textAppearance = com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
+            textSizeSp = appSettings.markdownTextSize.printSp
+        ).apply {
+            paint.isFakeBoldText = true
+            setLineSpacing(lineSpacingExtra * 0.5f, 1.0f)
         }
-        markwon.setMarkdown(renderView, markdown)
 
-        val widthSpec = View.MeasureSpec.makeMeasureSpec(previewWidth, View.MeasureSpec.EXACTLY)
+        return renderViewToBitmap(renderView, Color.WHITE)
+    }
+
+    private fun createMarkdownRenderView(
+        markdown: String,
+        width: Int,
+        textColor: Int,
+        backgroundColor: Int,
+        textAppearance: Int,
+        textSizeSp: Float
+    ): TextView {
+        return TextView(requireContext()).apply {
+            layoutParams = ViewGroup.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setPadding(24, 24, 24, 24)
+            setTextAppearance(textAppearance)
+            textSize = textSizeSp
+            setTextColor(textColor)
+            setBackgroundColor(backgroundColor)
+            includeFontPadding = false
+            markwon.setMarkdown(this, markdown)
+        }
+    }
+
+    private fun renderViewToBitmap(view: TextView, backgroundColor: Int): Bitmap {
+        val widthSpec = View.MeasureSpec.makeMeasureSpec(view.layoutParams.width, View.MeasureSpec.EXACTLY)
         val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        renderView.measure(widthSpec, heightSpec)
-        renderView.layout(0, 0, renderView.measuredWidth, renderView.measuredHeight)
+        view.measure(widthSpec, heightSpec)
+        view.layout(0, 0, view.measuredWidth, view.measuredHeight)
 
-        return Bitmap.createBitmap(renderView.measuredWidth, renderView.measuredHeight, Bitmap.Config.ARGB_8888).also { bitmap ->
+        return Bitmap.createBitmap(view.measuredWidth, view.measuredHeight, Bitmap.Config.ARGB_8888).also { bitmap ->
             val canvas = Canvas(bitmap)
-            canvas.drawColor(android.graphics.Color.WHITE)
-            renderView.draw(canvas)
+            canvas.drawColor(backgroundColor)
+            view.draw(canvas)
         }
     }
 
@@ -192,5 +237,9 @@ class TextFragment : Fragment() {
 
     private fun appendLog(message: String) {
         com.github.thiagokokada.meowprinter.data.LogStore.append(message)
+    }
+
+    companion object {
+        private const val PRINT_RENDER_WIDTH_PX = 384
     }
 }

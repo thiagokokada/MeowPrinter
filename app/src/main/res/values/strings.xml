@@ -14,11 +14,13 @@
     <string name="text_screen_title">Markdown Print</string>
     <string name="text_screen_subtitle">Write Markdown, preview the rendered result, then print it through the current printer settings.</string>
     <string name="markdown_input_label">Markdown</string>
+    <string name="markdown_text_size_label">Text size</string>
     <string name="markdown_preview_label">Preview</string>
     <string name="markdown_hint"># Heading\n\nWrite your Markdown here.</string>
+    <string name="markdown_printing_label">Markdown (print render)</string>
     <string name="print_markdown">Print markdown</string>
-    <string name="import_markdown">Import .md</string>
-    <string name="export_markdown">Export .md</string>
+    <string name="import_markdown">Import</string>
+    <string name="export_markdown">Export</string>
     <string name="markdown_file_name">meow-printer.md</string>
     <string name="markdown_empty">Write some Markdown first.</string>
     <string name="markdown_import_failed">Markdown import failed.</string>

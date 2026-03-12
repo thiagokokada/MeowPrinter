@@ -3,6 +3,7 @@ package com.github.thiagokokada.meowprinter.data
 import android.content.Context
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
+import com.github.thiagokokada.meowprinter.ui.TextSizeOption
 import androidx.core.content.edit
 
 class AppSettings(context: Context) {
@@ -34,6 +35,10 @@ class AppSettings(context: Context) {
         get() = preferences.getString(KEY_MARKDOWN_DRAFT, DEFAULT_MARKDOWN_DRAFT).orEmpty()
         set(value) = preferences.edit { putString(KEY_MARKDOWN_DRAFT, value) }
 
+    var markdownTextSize: TextSizeOption
+        get() = TextSizeOption.fromStoredValue(preferences.getString(KEY_MARKDOWN_TEXT_SIZE, null))
+        set(value) = preferences.edit { putString(KEY_MARKDOWN_TEXT_SIZE, value.name) }
+
     companion object {
         private const val PREFERENCES_NAME = "meow_printer_settings"
         private const val KEY_PRINTER_ADDRESS = "selected_printer_address"
@@ -42,6 +47,7 @@ class AppSettings(context: Context) {
         private const val KEY_PRINT_ENERGY = "selected_print_energy"
         private const val KEY_REQUESTED_BLE_PERMISSIONS = "requested_ble_permissions"
         private const val KEY_MARKDOWN_DRAFT = "markdown_draft"
+        private const val KEY_MARKDOWN_TEXT_SIZE = "markdown_text_size"
         private const val DEFAULT_MARKDOWN_DRAFT = """
 # Meow Printer
 

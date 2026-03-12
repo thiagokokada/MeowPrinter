@@ -42,8 +42,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
-                    android:text="@string/markdown_input_label"
+                    android:text="@string/markdown_text_size_label"
                     android:textAppearance="?attr/textAppearanceLabelLarge" />
+
+                <Spinner
+                    android:id="@+id/spinner_text_size"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
@@ -55,7 +61,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="top|start"
-                        android:hint="@string/markdown_hint"
+                        android:hint="@string/markdown_input_label"
                         android:inputType="textMultiLine|textCapSentences"
                         android:minLines="10"
                         android:textAppearance="?attr/textAppearanceBodyMedium"

@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private var selectedTabId: Int = R.id.navigation_image
     private var selectedScannedPrinterIndex: Int? = null
     private var ignorePrinterSelectionCallback = false
+    private var ignoreEnergySliderCallback = false
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -117,6 +118,13 @@ class MainActivity : AppCompatActivity() {
                 return@SimpleItemSelectedListener
             }
             selectedScannedPrinterIndex = position
+            render()
+        }
+        binding.sliderEnergy.addOnChangeListener { _, value, fromUser ->
+            if (!fromUser || ignoreEnergySliderCallback) {
+                return@addOnChangeListener
+            }
+            appSettings.selectedPrintEnergy = energyFromPercent(value.toInt())
             render()
         }
 
@@ -325,9 +333,13 @@ class MainActivity : AppCompatActivity() {
 
         runTrackedJob(getString(R.string.generating_image_print_job)) { launchedJob ->
             try {
-                val payload = CatPrinterProtocol.commandsPrintImage(image.rows)
-                appendLog("Generated ${image.rows.size} rows and ${payload.size} bytes from selected image.")
-                currentStatus = getString(R.string.printing_selected_image)
+                val energy = appSettings.selectedPrintEnergy
+                val energyLabel = formatEnergy(percentFromEnergy(energy))
+                val payload = CatPrinterProtocol.commandsPrintImage(image.rows, energy = energy)
+                appendLog(
+                    "Generated ${image.rows.size} rows and ${payload.size} bytes from selected image at $energyLabel."
+                )
+                currentStatus = getString(R.string.printing_selected_image_with_energy, energyLabel)
                 render()
 
                 manager.print(payload)
@@ -364,10 +376,17 @@ class MainActivity : AppCompatActivity() {
 
                 val manager = BlePrinterManager(applicationContext) {}
                 try {
+                    val energy = appSettings.selectedPrintEnergy
+                    val energyLabel = formatEnergy(percentFromEnergy(energy))
                     manager.connectAndInitialize(printer.device)
-                    val payload = CatPrinterProtocol.commandsPrintImage(PrinterTestPage.createRows())
+                    currentStatus = getString(R.string.testing_saved_printer_with_energy, energyLabel)
+                    render()
+                    val payload = CatPrinterProtocol.commandsPrintImage(
+                        PrinterTestPage.createRows(),
+                        energy = energy
+                    )
                     manager.print(payload)
-                    appendLog("Test page printed on ${printer.displayName}.")
+                    appendLog("Test page printed on ${printer.displayName} at $energyLabel.")
                     currentStatus = getString(R.string.test_page_sent)
                 } finally {
                     manager.release()
@@ -466,6 +485,10 @@ class MainActivity : AppCompatActivity() {
                 savedPrinterAddress
             )
         }
+        binding.energyValue.text = formatEnergy(percentFromEnergy(appSettings.selectedPrintEnergy))
+        ignoreEnergySliderCallback = true
+        binding.sliderEnergy.value = percentFromEnergy(appSettings.selectedPrintEnergy).toFloat()
+        ignoreEnergySliderCallback = false
         binding.buttonScanPrinters.isEnabled = currentJob?.isActive != true
         binding.buttonSavePrinter.isEnabled = selectedPrinter != null && currentJob?.isActive != true
         binding.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && currentJob?.isActive != true
@@ -528,6 +551,18 @@ class MainActivity : AppCompatActivity() {
         render()
     }
 
+    private fun formatEnergy(percent: Int): String {
+        return getString(R.string.energy_value, percent)
+    }
+
+    private fun percentFromEnergy(energy: Int): Int {
+        return ((energy.coerceIn(0, MAX_PRINT_ENERGY) * 100f) / MAX_PRINT_ENERGY).toInt()
+    }
+
+    private fun energyFromPercent(percent: Int): Int {
+        return ((percent.coerceIn(0, 100) / 100f) * MAX_PRINT_ENERGY).toInt()
+    }
+
     private fun hasBlePermissions(): Boolean {
         return BlePermissions.required.all { permission ->
             ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
@@ -588,5 +623,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val KEY_SELECTED_TAB = "selected_tab"
         private const val SCREEN_LOGS = -1
+        private const val MAX_PRINT_ENERGY = 0xffff
     }
 }

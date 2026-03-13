@@ -79,7 +79,7 @@ object CanvasDocumentCodec {
                 id = jsonObject.optString("id"),
                 markdown = decodeLegacyTableMarkdown(jsonObject),
                 alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
-                textSize = CanvasTextSize.NORMAL
+                textSize = CanvasTextSize.SP14
             )
 
             else -> null

@@ -256,7 +256,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             id = UUID.randomUUID().toString(),
             markdown = "",
             alignment = BlockAlignment.LEFT,
-            textSize = CanvasTextSize.NORMAL
+            textSize = CanvasTextSize.SP14
         )
 
         contentInput.setText(block.markdown)

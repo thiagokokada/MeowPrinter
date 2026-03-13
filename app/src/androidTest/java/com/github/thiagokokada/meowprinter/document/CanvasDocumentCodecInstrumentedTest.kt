@@ -17,7 +17,7 @@ class CanvasDocumentCodecInstrumentedTest {
                     id = "text-1",
                     markdown = "## Bold text\n\n| A | B |\n| --- | --- |\n| 1 | 2 |",
                     alignment = BlockAlignment.RIGHT,
-                    textSize = CanvasTextSize.LARGE
+                    textSize = CanvasTextSize.SP20
                 ),
                 ImageBlock(
                     id = "image-1",
@@ -34,7 +34,7 @@ class CanvasDocumentCodecInstrumentedTest {
         val textBlock = restored.blocks.first() as TextBlock
         assertEquals("## Bold text\n\n| A | B |\n| --- | --- |\n| 1 | 2 |", textBlock.markdown)
         assertEquals(BlockAlignment.RIGHT, textBlock.alignment)
-        assertEquals(CanvasTextSize.LARGE, textBlock.textSize)
+        assertEquals(CanvasTextSize.SP20, textBlock.textSize)
         val imageBlock = restored.blocks.last() as ImageBlock
         assertEquals(DitheringMode.ATKINSON, imageBlock.ditheringMode)
     }

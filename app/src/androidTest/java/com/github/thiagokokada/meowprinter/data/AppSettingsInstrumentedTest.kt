@@ -32,7 +32,7 @@ class AppSettingsInstrumentedTest {
                     id = "text-1",
                     markdown = "## Hello printer",
                     alignment = BlockAlignment.CENTER,
-                    textSize = CanvasTextSize.LARGE
+                    textSize = CanvasTextSize.SP20
                 )
             )
         )
@@ -44,6 +44,6 @@ class AppSettingsInstrumentedTest {
 
         assertEquals("## Hello printer", restoredBlock.markdown)
         assertEquals(BlockAlignment.CENTER, restoredBlock.alignment)
-        assertEquals(CanvasTextSize.LARGE, restoredBlock.textSize)
+        assertEquals(CanvasTextSize.SP20, restoredBlock.textSize)
     }
 }

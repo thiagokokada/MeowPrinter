@@ -6,12 +6,12 @@ import org.junit.Test
 class CanvasTextSizeTest {
     @Test
     fun fromStoredValueFallsBackToNormalWhenUnknown() {
-        assertEquals(CanvasTextSize.NORMAL, CanvasTextSize.fromStoredValue(null))
-        assertEquals(CanvasTextSize.NORMAL, CanvasTextSize.fromStoredValue("invalid"))
+        assertEquals(CanvasTextSize.SP14, CanvasTextSize.fromStoredValue(null))
+        assertEquals(CanvasTextSize.SP14, CanvasTextSize.fromStoredValue("invalid"))
     }
 
     @Test
     fun fromStoredValueReturnsMatchingOption() {
-        assertEquals(CanvasTextSize.XLARGE, CanvasTextSize.fromStoredValue("XLARGE"))
+        assertEquals(CanvasTextSize.SP24, CanvasTextSize.fromStoredValue("SP24"))
     }
 }

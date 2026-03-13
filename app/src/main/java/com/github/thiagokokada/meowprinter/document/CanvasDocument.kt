@@ -14,7 +14,7 @@ data class CanvasDocument(
                         id = UUID.randomUUID().toString(),
                         markdown = "## Meow Printer\n\nThis block supports **Markdown** tables, emphasis, and lists.",
                         alignment = BlockAlignment.LEFT,
-                        textSize = CanvasTextSize.NORMAL
+                        textSize = CanvasTextSize.SP14
                     )
                 )
             )

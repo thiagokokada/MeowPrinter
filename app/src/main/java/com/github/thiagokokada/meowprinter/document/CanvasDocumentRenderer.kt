@@ -126,7 +126,8 @@ class CanvasDocumentRenderer(
         val frame = FrameLayout(context).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
-        val bitmap = decodeBitmap(block.imageUri, contentWidthPx)
+        val targetWidthPx = (contentWidthPx * block.width.fraction).toInt().coerceAtLeast(1)
+        val bitmap = decodeBitmap(block.imageUri, targetWidthPx)
         if (bitmap == null) {
             frame.addView(
                 TextView(context).apply {
@@ -143,9 +144,9 @@ class CanvasDocumentRenderer(
             return frame
         }
 
-        val scaledBitmap = if (bitmap.width > contentWidthPx) {
-            val targetHeight = (bitmap.height * (contentWidthPx / bitmap.width.toFloat())).toInt().coerceAtLeast(1)
-            bitmap.scale(contentWidthPx, targetHeight)
+        val scaledBitmap = if (bitmap.width > targetWidthPx) {
+            val targetHeight = (bitmap.height * (targetWidthPx / bitmap.width.toFloat())).toInt().coerceAtLeast(1)
+            bitmap.scale(targetWidthPx, targetHeight)
         } else {
             bitmap
         }

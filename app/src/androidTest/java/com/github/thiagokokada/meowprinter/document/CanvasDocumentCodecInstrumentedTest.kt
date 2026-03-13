@@ -24,7 +24,8 @@ class CanvasDocumentCodecInstrumentedTest {
                     id = "image-1",
                     imageUri = "content://example/image.png",
                     alignment = BlockAlignment.LEFT,
-                    ditheringMode = DitheringMode.ATKINSON
+                    ditheringMode = DitheringMode.ATKINSON,
+                    width = ImageBlockWidth.HALF
                 )
             )
         )
@@ -38,6 +39,7 @@ class CanvasDocumentCodecInstrumentedTest {
         assertEquals(CanvasTextSize.SP20, textBlock.textSize)
         val imageBlock = restored.blocks.last() as ImageBlock
         assertEquals(DitheringMode.ATKINSON, imageBlock.ditheringMode)
+        assertEquals(ImageBlockWidth.HALF, imageBlock.width)
     }
 
     @Test

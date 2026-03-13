@@ -7,7 +7,7 @@ import org.json.JSONObject
 object CanvasDocumentCodec {
     fun encode(document: CanvasDocument): String {
         return JSONObject()
-            .put("version", 2)
+            .put("version", 3)
             .put("blocks", JSONArray().apply {
                 document.blocks.forEach { block ->
                     put(encodeBlock(block))
@@ -50,6 +50,7 @@ object CanvasDocumentCodec {
                 .put("imageUri", block.imageUri)
                 .put("alignment", block.alignment.name)
                 .put("ditheringMode", block.ditheringMode.name)
+                .put("width", block.width.name)
         }
     }
 
@@ -67,7 +68,8 @@ object CanvasDocumentCodec {
                 id = jsonObject.optString("id"),
                 imageUri = jsonObject.optString("imageUri"),
                 alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
-                ditheringMode = DitheringMode.fromStoredValue(jsonObject.optString("ditheringMode"))
+                ditheringMode = DitheringMode.fromStoredValue(jsonObject.optString("ditheringMode")),
+                width = ImageBlockWidth.fromStoredValue(jsonObject.optString("width"))
             )
 
             // Migrate legacy table blocks into markdown text blocks so saved drafts still load.

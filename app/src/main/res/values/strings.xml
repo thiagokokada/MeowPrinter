@@ -50,6 +50,7 @@
     <string name="text_edit_image">Edit image block</string>
     <string name="text_replace_image">Replace image</string>
     <string name="image_block_dithering_label">Dithering</string>
+    <string name="image_block_width_label">Width</string>
     <string name="save">Save</string>
     <string name="edit">Edit</string>
     <string name="duplicate">Duplicate</string>
@@ -63,7 +64,7 @@
     <string name="energy_subtitle">Controls how strong the thermal print is. Lower is lighter, higher is darker.</string>
     <string name="energy_value">%1$d%%</string>
     <string name="print_pacing_label">Print pacing</string>
-    <string name="print_pacing_subtitle">Higher values slow large prints down to improve reliability. Lower values print faster.</string>
+    <string name="print_pacing_subtitle">Higher values print faster. Lower values slow large prints down to improve reliability.</string>
     <string name="print_pacing_value">%1$d%%</string>
     <string name="saved_printer_label">Saved printer</string>
     <string name="printer_picker_label">Nearby printers</string>

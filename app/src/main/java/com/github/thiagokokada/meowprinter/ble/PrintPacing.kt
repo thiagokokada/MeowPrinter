@@ -9,7 +9,7 @@ data class PrintPacing(
     companion object {
         fun fromPercent(percent: Int): PrintPacing {
             val clampedPercent = percent.coerceIn(0, 100)
-            val fraction = clampedPercent / 100f
+            val fraction = 1f - (clampedPercent / 100f)
             return PrintPacing(
                 controlCommandDelayMs = lerp(4, 14, fraction),
                 rowCommandDelayMs = lerp(4, 14, fraction),

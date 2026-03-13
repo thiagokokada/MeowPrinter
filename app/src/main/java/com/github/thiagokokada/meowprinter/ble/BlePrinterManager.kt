@@ -67,10 +67,25 @@ class BlePrinterManager(
         }
     }
 
+    suspend fun printCommands(
+        commands: List<ByteArray>,
+        pacing: PrintPacing = PrintPacing.fromPercent(60)
+    ) {
+        readySignal = CompletableDeferred()
+        commands.forEachIndexed { index, command ->
+            send(command)
+            applyCommandPacing(index, command, pacing)
+        }
+        withTimeout(30_000) {
+            readySignal.await()
+        }
+    }
+
     suspend fun send(payload: ByteArray) {
         val tx = txCharacteristic ?: throw IOException("TX characteristic unavailable.")
-
+        val writeType = preferredWriteType(tx)
         val chunkSize = (negotiatedMtu - 3).coerceAtLeast(20)
+        var chunkIndex = 0
         for (offset in payload.indices step chunkSize) {
             val end = minOf(offset + chunkSize, payload.size)
             val chunk = payload.copyOfRange(offset, end)
@@ -78,10 +93,11 @@ class BlePrinterManager(
                 writeCharacteristic(
                     tx,
                     chunk,
-                    BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                    writeType
                 )
             )
-            delay(20)
+            applyWritePacing(writeType, chunkIndex)
+            chunkIndex += 1
         }
     }
 
@@ -152,8 +168,47 @@ class BlePrinterManager(
         }
     }
 
+    private fun preferredWriteType(characteristic: BluetoothGattCharacteristic): Int {
+        val supportsWrite =
+            characteristic.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0
+        return if (supportsWrite) {
+            BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        } else {
+            BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+        }
+    }
+
+    private suspend fun applyWritePacing(writeType: Int, chunkIndex: Int) {
+        if (writeType == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT) {
+            delay(8)
+            return
+        }
+
+        delay(30)
+        if ((chunkIndex + 1) % LONG_TRANSFER_PAUSE_EVERY_CHUNKS == 0) {
+            delay(LONG_TRANSFER_EXTRA_PAUSE_MS)
+        }
+    }
+
+    private suspend fun applyCommandPacing(index: Int, command: ByteArray, pacing: PrintPacing) {
+        val commandId = command.getOrNull(2)?.toInt()
+        when (commandId) {
+            PRINT_ROW_RLE_COMMAND_ID, PRINT_ROW_RAW_COMMAND_ID -> {
+                delay(pacing.rowCommandDelayMs)
+                if ((index + 1) % pacing.rowCommandExtraPauseEvery == 0) {
+                    delay(pacing.rowCommandExtraPauseMs)
+                }
+            }
+            else -> delay(pacing.controlCommandDelayMs)
+        }
+    }
+
     companion object {
         private const val DEFAULT_MTU = 23
         private const val MAX_MTU = 247
+        private const val LONG_TRANSFER_PAUSE_EVERY_CHUNKS = 32
+        private const val LONG_TRANSFER_EXTRA_PAUSE_MS = 180L
+        private const val PRINT_ROW_RLE_COMMAND_ID = -65
+        private const val PRINT_ROW_RAW_COMMAND_ID = -94
     }
 }

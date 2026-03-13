@@ -46,4 +46,13 @@ class AppSettingsInstrumentedTest {
         assertEquals(BlockAlignment.CENTER, restoredBlock.alignment)
         assertEquals(CanvasTextSize.SP20, restoredBlock.textSize)
     }
+
+    @Test
+    fun printPacingPercentPersists() {
+        appSettings.selectedPrintPacingPercent = 72
+
+        val restored = AppSettings(context).selectedPrintPacingPercent
+
+        assertEquals(72, restored)
+    }
 }

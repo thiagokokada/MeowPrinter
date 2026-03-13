@@ -89,20 +89,27 @@ object CatPrinterProtocol {
     }
 
     fun commandsPrintImage(rows: List<BooleanArray>, energy: Int = 0xffff): ByteArray {
-        val data = ByteArrayOutputStream()
-        data.write(getDeviceState)
-        data.write(setQuality200Dpi)
-        data.write(cmdSetEnergy(energy))
-        data.write(cmdApplyEnergy())
-        data.write(latticeStart)
-        rows.forEach { row -> data.write(cmdPrintRow(row)) }
-        data.write(cmdFeedPaper(25))
-        data.write(setPaper)
-        data.write(setPaper)
-        data.write(setPaper)
-        data.write(latticeEnd)
-        data.write(getDeviceState)
-        return data.toByteArray()
+        return commandsPrintImageCommands(rows, energy).fold(ByteArrayOutputStream()) { data, command ->
+            data.write(command)
+            data
+        }.toByteArray()
+    }
+
+    fun commandsPrintImageCommands(rows: List<BooleanArray>, energy: Int = 0xffff): List<ByteArray> {
+        return buildList {
+            add(getDeviceState)
+            add(setQuality200Dpi)
+            add(cmdSetEnergy(energy))
+            add(cmdApplyEnergy())
+            add(latticeStart)
+            rows.forEach { row -> add(cmdPrintRow(row)) }
+            add(cmdFeedPaper(25))
+            add(setPaper)
+            add(setPaper)
+            add(setPaper)
+            add(latticeEnd)
+            add(getDeviceState)
+        }
     }
 
     private fun buildRowCommand(commandId: Int, payload: List<Int>): ByteArray {

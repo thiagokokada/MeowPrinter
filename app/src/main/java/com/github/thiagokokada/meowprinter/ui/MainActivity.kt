@@ -20,6 +20,7 @@ import com.github.thiagokokada.meowprinter.ble.BlePermissions
 import com.github.thiagokokada.meowprinter.ble.BlePrinterManager
 import com.github.thiagokokada.meowprinter.ble.BlePrinterScanner
 import com.github.thiagokokada.meowprinter.ble.DiscoveredPrinter
+import com.github.thiagokokada.meowprinter.ble.PrintPacing
 import com.github.thiagokokada.meowprinter.data.AppSettings
 import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private var selectedScannedPrinterIndex: Int? = null
     private var ignorePrinterSelectionCallback = false
     private var ignoreEnergySliderCallback = false
+    private var ignorePacingSliderCallback = false
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -175,6 +177,13 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 return@addOnChangeListener
             }
             appSettings.selectedPrintEnergy = PrintEnergy.fromPercent(value.toInt())
+            render()
+        }
+        binding.sliderPrintPacing.addOnChangeListener { _, value, fromUser ->
+            if (!fromUser || ignorePacingSliderCallback) {
+                return@addOnChangeListener
+            }
+            appSettings.selectedPrintPacingPercent = value.toInt()
             render()
         }
 
@@ -429,14 +438,18 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             try {
                 val energy = appSettings.selectedPrintEnergy
                 val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
-                val payload = CatPrinterProtocol.commandsPrintImage(preparedImage.rows, energy = energy)
+                val commands = CatPrinterProtocol.commandsPrintImageCommands(
+                    preparedImage.rows,
+                    energy = energy
+                )
+                val payloadSize = commands.sumOf { it.size }
                 appendLog(
-                    "Generated ${preparedImage.rows.size} rows and ${payload.size} bytes from $sourceLabel at $energyLabel."
+                    "Generated ${preparedImage.rows.size} rows and $payloadSize bytes from $sourceLabel at $energyLabel."
                 )
                 currentStatus = getString(R.string.printing_selected_image_with_energy, energyLabel)
                 render()
 
-                manager.print(payload)
+                manager.printCommands(commands, currentPrintPacing())
 
                 currentStatus = getString(R.string.printer_ready_again)
                 appendLog("Image print completed successfully.")
@@ -487,11 +500,11 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                     val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
                     currentStatus = getString(R.string.testing_saved_printer_with_energy, energyLabel)
                     render()
-                    val payload = CatPrinterProtocol.commandsPrintImage(
+                    val commands = CatPrinterProtocol.commandsPrintImageCommands(
                         PrinterTestPage.createRows(),
                         energy = energy
                     )
-                    manager.print(payload)
+                    manager.printCommands(commands, currentPrintPacing())
                     appendLog("Test page printed on $printerName at $energyLabel.")
                     currentStatus = getString(R.string.test_page_sent)
                 }
@@ -669,6 +682,11 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         ignoreEnergySliderCallback = true
         binding.sliderEnergy.value = PrintEnergy.toPercent(appSettings.selectedPrintEnergy).toFloat()
         ignoreEnergySliderCallback = false
+        val pacingPercent = appSettings.selectedPrintPacingPercent
+        binding.printPacingValue.text = formatPrintPacing(pacingPercent)
+        ignorePacingSliderCallback = true
+        binding.sliderPrintPacing.value = pacingPercent.toFloat()
+        ignorePacingSliderCallback = false
         binding.buttonScanPrinters.isEnabled = !isBusy
         binding.buttonSavePrinter.isEnabled = selectedPrinter != null && !isBusy
         binding.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
@@ -732,6 +750,14 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     private fun formatEnergy(percent: Int): String {
         return getString(R.string.energy_value, percent)
+    }
+
+    private fun formatPrintPacing(percent: Int): String {
+        return getString(R.string.print_pacing_value, percent)
+    }
+
+    private fun currentPrintPacing(): PrintPacing {
+        return PrintPacing.fromPercent(appSettings.selectedPrintPacingPercent)
     }
 
     private fun hasBlePermissions(): Boolean {

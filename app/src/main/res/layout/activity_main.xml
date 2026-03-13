@@ -305,13 +305,6 @@
                                 android:text="@string/retract_paper" />
                         </LinearLayout>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:text="@string/printer_picker_label"
-                            android:textAppearance="?attr/textAppearanceLabelLarge" />
-
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/button_scan_printers"
                             style="@style/Widget.Material3.Button.OutlinedButton"
@@ -320,19 +313,11 @@
                             android:layout_marginTop="12dp"
                             android:text="@string/scan" />
 
-                        <TextView
-                            android:id="@+id/scan_status"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            tools:text="2 compatible printers found." />
-
                         <Spinner
                             android:id="@+id/spinner_printers"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="12dp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/button_save_printer"

@@ -675,11 +675,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.buttonAdvancePaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
         binding.buttonRetractPaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
         binding.buttonOpenLogs.isEnabled = true
-        binding.scanStatus.text = when {
-            discoveredPrinters.isNotEmpty() -> getString(R.string.printers_found, discoveredPrinters.size)
-            selectedTabId == R.id.navigation_settings -> currentStatus
-            else -> ""
-        }
 
         binding.logsValue.text = LogStore.asText().ifBlank { getString(R.string.no_logs_yet) }
         renderPrinterChoices()

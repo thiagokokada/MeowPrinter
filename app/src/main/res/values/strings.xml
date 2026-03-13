@@ -105,7 +105,7 @@
     <string name="printing_selected_image_with_energy">Printing selected image at %1$s...</string>
     <string name="scan_failed">Scan failed.</string>
     <string name="scan_printers">Scan for printers</string>
-    <string name="scan">Scan nearby</string>
+    <string name="scan">Scan printers</string>
     <string name="scanning_printers">Scanning for compatible printers...</string>
     <string name="scanning_for_saved_printer">Scanning for the saved printer...</string>
     <string name="forget_printer">Forget printer</string>

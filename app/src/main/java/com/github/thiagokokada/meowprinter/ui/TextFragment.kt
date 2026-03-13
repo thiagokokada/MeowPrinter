@@ -53,6 +53,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         fun selectedTextDithering(): com.github.thiagokokada.meowprinter.image.DitheringMode
         fun connectionSummary(): ConnectionSummary
         fun refreshPrinterConnection()
+        fun isPrintInProgress(): Boolean
     }
 
     private var binding: FragmentTextBinding? = null
@@ -176,12 +177,18 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private fun renderDocument() {
         val summary = renderConnectionSummary()
         renderBlockCards()
-        binding?.buttonPrintDocument?.isEnabled = currentDocument.blocks.isNotEmpty() && summary?.isConnected == true
+        binding?.buttonPrintDocument?.isEnabled =
+            currentDocument.blocks.isNotEmpty() &&
+                summary?.isConnected == true &&
+                host?.isPrintInProgress() != true
     }
 
     fun refreshConnectionSummary() {
         val summary = renderConnectionSummary()
-        binding?.buttonPrintDocument?.isEnabled = currentDocument.blocks.isNotEmpty() && summary?.isConnected == true
+        binding?.buttonPrintDocument?.isEnabled =
+            currentDocument.blocks.isNotEmpty() &&
+                summary?.isConnected == true &&
+                host?.isPrintInProgress() != true
     }
 
     private fun renderConnectionSummary(): ConnectionSummary? {
@@ -522,6 +529,9 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     private fun printDocument() {
+        if (host?.isPrintInProgress() == true) {
+            return
+        }
         if (currentDocument.blocks.isEmpty()) {
             Toast.makeText(requireContext(), R.string.text_document_empty, Toast.LENGTH_SHORT).show()
             return

@@ -38,6 +38,10 @@ class AppSettings(context: Context) {
         get() = preferences.getBoolean(KEY_REQUESTED_BLE_PERMISSIONS, false)
         set(value) = preferences.edit { putBoolean(KEY_REQUESTED_BLE_PERMISSIONS, value) }
 
+    var hasRequestedNotificationPermission: Boolean
+        get() = preferences.getBoolean(KEY_REQUESTED_NOTIFICATION_PERMISSION, false)
+        set(value) = preferences.edit { putBoolean(KEY_REQUESTED_NOTIFICATION_PERMISSION, value) }
+
     var canvasDocumentDraft: CanvasDocument
         get() = CanvasDocumentCodec.decode(preferences.getString(KEY_CANVAS_DOCUMENT_DRAFT, null))
         set(value) = preferences.edit { putString(KEY_CANVAS_DOCUMENT_DRAFT, CanvasDocumentCodec.encode(value)) }
@@ -50,6 +54,7 @@ class AppSettings(context: Context) {
         private const val KEY_PRINT_ENERGY = "selected_print_energy"
         private const val KEY_PRINT_PACING_PERCENT = "selected_print_pacing_percent"
         private const val KEY_REQUESTED_BLE_PERMISSIONS = "requested_ble_permissions"
+        private const val KEY_REQUESTED_NOTIFICATION_PERMISSION = "requested_notification_permission"
         private const val KEY_CANVAS_DOCUMENT_DRAFT = "canvas_document_draft"
         private const val DEFAULT_PRINT_PACING_PERCENT = 60
     }

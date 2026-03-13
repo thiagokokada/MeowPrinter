@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
@@ -43,6 +44,7 @@ import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 import java.io.File
 import java.util.UUID
+import org.json.JSONObject
 
 class TextFragment : Fragment(R.layout.fragment_text) {
     interface Host {
@@ -57,6 +59,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private lateinit var appSettings: AppSettings
     private lateinit var documentRenderer: CanvasDocumentRenderer
     private var currentDocument = CanvasDocument.default()
+    private var currentSavedDocumentName: String? = null
     private var pendingImageTargetBlockId: String? = null
 
     private val imagePickerLauncher = registerForActivityResult(
@@ -95,6 +98,26 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         }
     }
 
+    private val saveDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument(DOCUMENT_MIME_TYPE)
+    ) { uri ->
+        if (uri == null) {
+            appendLog("Compose document save canceled.")
+            return@registerForActivityResult
+        }
+        saveDocumentToUri(uri)
+    }
+
+    private val loadDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) {
+            appendLog("Compose document load canceled.")
+            return@registerForActivityResult
+        }
+        loadDocumentFromUri(uri)
+    }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         host = context as? Host
@@ -109,10 +132,17 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             ?.getString(KEY_DOCUMENT_STATE)
             ?.let(CanvasDocumentCodec::decode)
             ?: appSettings.canvasDocumentDraft
+        currentSavedDocumentName = savedInstanceState?.getString(KEY_DOCUMENT_NAME)
 
         binding?.textContent?.applySideAndBottomSystemBarsPadding()
         binding?.buttonAddTextBlock?.setOnClickListener { showTextBlockDialog() }
         binding?.buttonAddImageBlock?.setOnClickListener { startImageInsert() }
+        binding?.buttonSaveDocument?.setOnClickListener {
+            saveDocumentLauncher.launch(suggestedDocumentFileName())
+        }
+        binding?.buttonLoadDocument?.setOnClickListener {
+            loadDocumentLauncher.launch(arrayOf(DOCUMENT_MIME_TYPE))
+        }
         binding?.buttonPrintDocument?.setOnClickListener { printDocument() }
         binding?.buttonComposeConnection?.setOnClickListener {
             host?.refreshPrinterConnection()
@@ -128,6 +158,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_DOCUMENT_STATE, CanvasDocumentCodec.encode(currentDocument))
+        outState.putString(KEY_DOCUMENT_NAME, currentSavedDocumentName)
     }
 
     override fun onDestroyView() {
@@ -221,6 +252,9 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                     is TextBlock -> showTextBlockDialog(block)
                     is ImageBlock -> showImageBlockDialog(block)
                 }
+            })
+            addView(iconActionButton(R.drawable.ic_content_copy_24, R.string.duplicate) {
+                updateDocument(CanvasDocumentEditor.duplicateBlock(currentDocument, block.id))
             })
             addView(iconActionButton(R.drawable.ic_arrow_upward_24, R.string.move_up) {
                 updateDocument(CanvasDocumentEditor.moveBlock(currentDocument, block.id, -1))
@@ -496,6 +530,78 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         }
     }
 
+    private fun saveDocumentToUri(uri: Uri) {
+        runCatching {
+            requireContext().contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use { writer ->
+                writer.write(CanvasDocumentCodec.encode(currentDocument))
+            } ?: error("Unable to open output stream.")
+            readDisplayName(uri) ?: suggestedDocumentFileName()
+        }.onSuccess { displayName ->
+            currentSavedDocumentName = displayName
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.text_save_document_success, displayName),
+                Toast.LENGTH_SHORT
+            ).show()
+            appendLog("Saved compose document to $uri.")
+        }.onFailure { error ->
+            Toast.makeText(requireContext(), R.string.text_save_document_failed, Toast.LENGTH_SHORT).show()
+            appendLog("Failed to save compose document: ${error.message ?: getString(R.string.unknown_error)}")
+        }
+    }
+
+    private fun loadDocumentFromUri(uri: Uri) {
+        runCatching {
+            val rawDocument = requireContext().contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
+                reader.readText()
+            } ?: error("Unable to open input stream.")
+            val root = JSONObject(rawDocument)
+            if (!root.has("blocks")) {
+                error("Invalid document format.")
+            }
+            val displayName = readDisplayName(uri) ?: uri.lastPathSegment.orEmpty()
+            Triple(displayName, rawDocument, uri)
+        }.onSuccess { (displayName, rawDocument, sourceUri) ->
+            currentSavedDocumentName = displayName
+            updateDocument(CanvasDocumentCodec.decode(rawDocument))
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.text_load_document_success, displayName),
+                Toast.LENGTH_SHORT
+            ).show()
+            appendLog("Loaded compose document from $sourceUri.")
+        }.onFailure { error ->
+            Toast.makeText(requireContext(), R.string.text_load_document_failed, Toast.LENGTH_SHORT).show()
+            appendLog("Failed to load compose document: ${error.message ?: getString(R.string.unknown_error)}")
+        }
+    }
+
+    private fun suggestedDocumentFileName(): String {
+        val baseName = currentSavedDocumentName
+            ?.substringBeforeLast(".json")
+            ?.trim()
+            ?.takeIf(String::isNotBlank)
+            ?: DEFAULT_DOCUMENT_FILE_NAME
+        return "$baseName.json"
+    }
+
+    private fun readDisplayName(uri: Uri): String? {
+        return requireContext().contentResolver.query(
+            uri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (columnIndex == -1 || !cursor.moveToFirst()) {
+                null
+            } else {
+                cursor.getString(columnIndex)
+            }
+        }
+    }
+
     private fun updateDocument(updatedDocument: CanvasDocument) {
         currentDocument = updatedDocument
         appSettings.canvasDocumentDraft = updatedDocument
@@ -522,7 +628,10 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     companion object {
+        private const val DEFAULT_DOCUMENT_FILE_NAME = "meow-document"
+        private const val DOCUMENT_MIME_TYPE = "application/json"
         private const val KEY_DOCUMENT_STATE = "document_state"
+        private const val KEY_DOCUMENT_NAME = "document_name"
         private const val PRINT_RENDER_WIDTH_PX = 384
     }
 }

@@ -1,5 +1,7 @@
 package com.github.thiagokokada.meowprinter.document
 
+import java.util.UUID
+
 object CanvasDocumentEditor {
     fun appendBlock(document: CanvasDocument, block: DocumentBlock): CanvasDocument {
         return document.copy(blocks = document.blocks + block)
@@ -33,9 +35,43 @@ object CanvasDocumentEditor {
             return document
         }
 
-        val mutableBlocks = document.blocks.toMutableList()
-        val block = mutableBlocks.removeAt(currentIndex)
-        mutableBlocks.add(targetIndex, block)
-        return document.copy(blocks = mutableBlocks.toList())
+        val movedBlock = document.blocks[currentIndex]
+        val remainingBlocks = document.blocks.filterIndexed { index, _ -> index != currentIndex }
+        val reorderedBlocks = buildList {
+            remainingBlocks.forEachIndexed { index, block ->
+                if (index == targetIndex) {
+                    add(movedBlock)
+                }
+                add(block)
+            }
+            if (targetIndex >= remainingBlocks.size) {
+                add(movedBlock)
+            }
+        }
+        return document.copy(blocks = reorderedBlocks)
+    }
+
+    fun duplicateBlock(document: CanvasDocument, blockId: String): CanvasDocument {
+        val sourceIndex = document.blocks.indexOfFirst { it.id == blockId }
+        if (sourceIndex == -1) {
+            return document
+        }
+
+        val sourceBlock = document.blocks[sourceIndex]
+        val duplicatedBlock = when (sourceBlock) {
+            is TextBlock -> sourceBlock.copy(id = UUID.randomUUID().toString())
+            is ImageBlock -> sourceBlock.copy(id = UUID.randomUUID().toString())
+        }
+
+        return document.copy(
+            blocks = buildList {
+                document.blocks.forEachIndexed { index, block ->
+                    add(block)
+                    if (index == sourceIndex) {
+                        add(duplicatedBlock)
+                    }
+                }
+            }
+        )
     }
 }

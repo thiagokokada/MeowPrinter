@@ -1,6 +1,7 @@
 package com.github.thiagokokada.meowprinter.document
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -26,5 +27,22 @@ class CanvasDocumentEditorTest {
 
         assertTrue(updated.blocks.isNotEmpty())
         assertTrue(updated.blocks.first() is TextBlock)
+    }
+
+    @Test
+    fun duplicateBlockClonesContentAndInsertsNextToSource() {
+        val first = TextBlock("1", "First", BlockAlignment.CENTER, CanvasTextSize.SP16)
+        val second = ImageBlock("2", "content://example/image.png", BlockAlignment.RIGHT)
+        val document = CanvasDocument(listOf(first, second))
+
+        val updated = CanvasDocumentEditor.duplicateBlock(document, "1")
+
+        assertEquals(listOf("1", "2"), document.blocks.map { it.id })
+        assertEquals(3, updated.blocks.size)
+        val duplicated = updated.blocks[1] as TextBlock
+        assertNotEquals("1", duplicated.id)
+        assertEquals(first.markdown, duplicated.markdown)
+        assertEquals(first.alignment, duplicated.alignment)
+        assertEquals(first.textSize, duplicated.textSize)
     }
 }

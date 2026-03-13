@@ -17,6 +17,7 @@
     <string name="text_add_block_label">Add block</string>
     <string name="text_add_text">Add Text</string>
     <string name="text_add_image">Add image</string>
+    <string name="text_new_document">New</string>
     <string name="text_save_document">Save</string>
     <string name="text_load_document">Load</string>
     <string name="text_blocks_label">Document blocks</string>
@@ -25,6 +26,8 @@
     <string name="text_printing_label">text document</string>
     <string name="text_print_failed">Document print failed.</string>
     <string name="text_document_empty">Add at least one block first.</string>
+    <string name="text_new_document_title">Start a new document?</string>
+    <string name="text_new_document_message">This will replace the current document. Save it first if you want to keep your changes.</string>
     <string name="text_image_edit_failed">Image editing failed.</string>
     <string name="text_save_document_success">Saved file: %1$s</string>
     <string name="text_load_document_success">Loaded file: %1$s</string>

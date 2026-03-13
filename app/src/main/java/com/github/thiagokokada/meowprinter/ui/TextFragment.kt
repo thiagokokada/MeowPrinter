@@ -137,6 +137,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         binding?.textContent?.applySideAndBottomSystemBarsPadding()
         binding?.buttonAddTextBlock?.setOnClickListener { showTextBlockDialog() }
         binding?.buttonAddImageBlock?.setOnClickListener { startImageInsert() }
+        binding?.buttonNewDocument?.setOnClickListener { confirmStartNewDocument() }
         binding?.buttonSaveDocument?.setOnClickListener {
             saveDocumentLauncher.launch(suggestedDocumentFileName())
         }
@@ -528,6 +529,19 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             Toast.makeText(requireContext(), R.string.text_print_failed, Toast.LENGTH_SHORT).show()
             appendLog("Document render failed before print: ${error.message ?: getString(R.string.unknown_error)}")
         }
+    }
+
+    private fun confirmStartNewDocument() {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.text_new_document_title)
+            .setMessage(R.string.text_new_document_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.text_new_document) { _, _ ->
+                currentSavedDocumentName = null
+                updateDocument(CanvasDocument.empty())
+                appendLog("Started a new compose document.")
+            }
+            .show()
     }
 
     private fun saveDocumentToUri(uri: Uri) {

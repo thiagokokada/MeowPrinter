@@ -29,11 +29,7 @@ object CanvasDocumentCodec {
                     decodeBlock(blocksJson.getJSONObject(index))?.let(::add)
                 }
             }
-            if (blocks.isEmpty()) {
-                CanvasDocument.default()
-            } else {
-                CanvasDocument(blocks = blocks)
-            }
+            CanvasDocument(blocks = blocks)
         }.getOrElse {
             CanvasDocument.default()
         }

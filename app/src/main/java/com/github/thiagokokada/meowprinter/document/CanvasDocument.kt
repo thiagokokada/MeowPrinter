@@ -7,6 +7,10 @@ data class CanvasDocument(
     val blocks: List<DocumentBlock>
 ) {
     companion object {
+        fun empty(): CanvasDocument {
+            return CanvasDocument(blocks = emptyList())
+        }
+
         fun default(): CanvasDocument {
             return CanvasDocument(
                 blocks = listOf(

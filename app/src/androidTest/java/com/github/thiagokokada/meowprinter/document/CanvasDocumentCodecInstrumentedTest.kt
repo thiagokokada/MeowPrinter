@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -37,5 +38,12 @@ class CanvasDocumentCodecInstrumentedTest {
         assertEquals(CanvasTextSize.SP20, textBlock.textSize)
         val imageBlock = restored.blocks.last() as ImageBlock
         assertEquals(DitheringMode.ATKINSON, imageBlock.ditheringMode)
+    }
+
+    @Test
+    fun encodeAndDecodeRoundTripPreservesEmptyDocument() {
+        val restored = CanvasDocumentCodec.decode(CanvasDocumentCodec.encode(CanvasDocument.empty()))
+
+        assertTrue(restored.blocks.isEmpty())
     }
 }

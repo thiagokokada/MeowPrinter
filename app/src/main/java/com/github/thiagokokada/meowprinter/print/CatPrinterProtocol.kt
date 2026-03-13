@@ -5,6 +5,7 @@ import java.util.UUID
 
 object CatPrinterProtocol {
     const val PRINT_WIDTH = 384
+    const val PAPER_MOVE_STEPS = 25
 
     val primaryServiceUuid: UUID = UUID.fromString("0000ae30-0000-1000-8000-00805f9b34fb")
     val secondaryServiceUuid: UUID = UUID.fromString("0000af30-0000-1000-8000-00805f9b34fb")
@@ -48,6 +49,14 @@ object CatPrinterProtocol {
         val command = bytes(81, 120, -67, 0, 1, 0, amount and 0xff, 0, -1)
         command[7] = checksum(command, 6, 1)
         return command
+    }
+
+    fun cmdAdvancePaper(steps: Int = PAPER_MOVE_STEPS): ByteArray {
+        return cmdMovePaper(commandId = -95, steps = steps)
+    }
+
+    fun cmdRetractPaper(steps: Int = PAPER_MOVE_STEPS): ByteArray {
+        return cmdMovePaper(commandId = -96, steps = steps)
     }
 
     fun cmdSetEnergy(value: Int): ByteArray {
@@ -103,6 +112,16 @@ object CatPrinterProtocol {
             add(0)
             add(-1)
         })
+        command[command.lastIndex - 1] = checksum(command, 6, payload.size)
+        return command
+    }
+
+    private fun cmdMovePaper(commandId: Int, steps: Int): ByteArray {
+        val clampedSteps = steps.coerceAtLeast(0).coerceAtMost(0xffff)
+        val payload = listOf(clampedSteps and 0xff, (clampedSteps shr 8) and 0xff)
+        val command = bytes(
+            listOf(81, 120, commandId, 0, payload.size, 0) + payload + listOf(0, -1)
+        )
         command[command.lastIndex - 1] = checksum(command, 6, payload.size)
         return command
     }

@@ -24,6 +24,22 @@ class CatPrinterProtocolTest {
     }
 
     @Test
+    fun cmdAdvancePaperMatchesLinkedReference() {
+        assertArrayEquals(
+            byteArrayOf(81, 120, -95, 0, 2, 0, 25, 0, -22, -1),
+            CatPrinterProtocol.cmdAdvancePaper(25)
+        )
+    }
+
+    @Test
+    fun cmdRetractPaperMatchesLinkedReference() {
+        assertArrayEquals(
+            byteArrayOf(81, 120, -96, 0, 2, 0, 25, 0, -22, -1),
+            CatPrinterProtocol.cmdRetractPaper(25)
+        )
+    }
+
+    @Test
     fun cmdPrintRowFallsBackToByteEncodingForAlternatingPixels() {
         val row = BooleanArray(CatPrinterProtocol.PRINT_WIDTH) { index -> index % 2 == 0 }
         val expected = ByteArray(56).apply {

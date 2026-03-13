@@ -75,6 +75,8 @@
     <string name="connecting">Connecting</string>
     <string name="bluetooth_permission_missing_idle">Bluetooth permission is needed before the app can auto-connect.</string>
     <string name="print_test_page">Print test page</string>
+    <string name="advance_paper">Advance paper</string>
+    <string name="retract_paper">Retract paper</string>
     <string name="pick_image">Pick image</string>
     <string name="editing_image">Opening image editor...</string>
     <string name="print_image">Print image</string>
@@ -121,6 +123,12 @@
     <string name="testing_saved_printer">Connecting and sending a test page...</string>
     <string name="testing_saved_printer_with_energy">Connecting and sending a test page at %1$s...</string>
     <string name="test_page_sent">Test page sent.</string>
+    <string name="advancing_paper">Advancing paper...</string>
+    <string name="paper_advanced">Paper advanced.</string>
+    <string name="paper_advance_failed">Paper advance failed.</string>
+    <string name="retracting_paper">Retracting paper...</string>
+    <string name="paper_retracted">Paper retracted.</string>
+    <string name="paper_retract_failed">Paper retract failed.</string>
     <string name="logs_subtitle">Recent connection, scan, image-processing, and printing events.</string>
     <string name="refresh">Refresh</string>
     <string name="unknown_error">unknown error</string>

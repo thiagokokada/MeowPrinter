@@ -60,8 +60,15 @@ class BlePrinterManager(
     }
 
     suspend fun print(payload: ByteArray) {
-        val tx = txCharacteristic ?: throw IOException("TX characteristic unavailable.")
         readySignal = CompletableDeferred()
+        send(payload)
+        withTimeout(30_000) {
+            readySignal.await()
+        }
+    }
+
+    suspend fun send(payload: ByteArray) {
+        val tx = txCharacteristic ?: throw IOException("TX characteristic unavailable.")
 
         val chunkSize = (negotiatedMtu - 3).coerceAtLeast(20)
         for (offset in payload.indices step chunkSize) {
@@ -75,10 +82,6 @@ class BlePrinterManager(
                 )
             )
             delay(20)
-        }
-
-        withTimeout(30_000) {
-            readySignal.await()
         }
     }
 

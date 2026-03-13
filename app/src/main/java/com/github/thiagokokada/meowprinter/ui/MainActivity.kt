@@ -192,6 +192,12 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.buttonTestPrint.setOnClickListener {
             ensureBlePermissionsThen { printTestPageFromCurrentPrinter() }
         }
+        binding.buttonAdvancePaper.setOnClickListener {
+            ensureBlePermissionsThen { movePaper(forward = true) }
+        }
+        binding.buttonRetractPaper.setOnClickListener {
+            ensureBlePermissionsThen { movePaper(forward = false) }
+        }
         binding.buttonOpenLogs.setOnClickListener {
             showScreen(SCREEN_LOGS)
         }
@@ -476,17 +482,9 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
         runTrackedJob(getString(R.string.testing_saved_printer)) { launchedJob ->
             try {
-                val printer = scanner.findFirstCompatiblePrinter(preferredAddress = printerAddress)
-                if (printer == null) {
-                    currentStatus = getString(R.string.saved_printer_not_found)
-                    return@runTrackedJob
-                }
-
-                val manager = BlePrinterManager(applicationContext) {}
-                try {
+                withSavedPrinterManager(printerAddress) { printerName, manager ->
                     val energy = appSettings.selectedPrintEnergy
                     val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
-                    manager.connectAndInitialize(printer.device)
                     currentStatus = getString(R.string.testing_saved_printer_with_energy, energyLabel)
                     render()
                     val payload = CatPrinterProtocol.commandsPrintImage(
@@ -494,16 +492,91 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                         energy = energy
                     )
                     manager.print(payload)
-                    appendLog("Test page printed on ${printer.displayName} at $energyLabel.")
+                    appendLog("Test page printed on $printerName at $energyLabel.")
                     currentStatus = getString(R.string.test_page_sent)
-                } finally {
-                    manager.release()
                 }
             } catch (e: Exception) {
                 currentStatus = getString(R.string.scan_failed_message, e.message ?: getString(R.string.unknown_error))
             } finally {
                 finishTrackedJob(launchedJob)
             }
+        }
+    }
+
+    private fun movePaper(forward: Boolean) {
+        val printerAddress = appSettings.selectedPrinterAddress
+        if (printerAddress == null) {
+            Toast.makeText(this, R.string.select_printer_in_settings, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!scanner.isBluetoothEnabled()) {
+            Toast.makeText(this, R.string.bluetooth_disabled, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val progressStatus = if (forward) {
+            getString(R.string.advancing_paper)
+        } else {
+            getString(R.string.retracting_paper)
+        }
+
+        runTrackedJob(progressStatus) { launchedJob ->
+            try {
+                withSavedPrinterManager(printerAddress) { printerName, manager ->
+                    val payload = if (forward) {
+                        CatPrinterProtocol.cmdAdvancePaper()
+                    } else {
+                        CatPrinterProtocol.cmdRetractPaper()
+                    }
+                    manager.send(payload)
+                    currentStatus = if (forward) {
+                        getString(R.string.paper_advanced)
+                    } else {
+                        getString(R.string.paper_retracted)
+                    }
+                    appendLog(
+                        "${if (forward) "Advanced" else "Retracted"} paper on $printerName by " +
+                            "${CatPrinterProtocol.PAPER_MOVE_STEPS} steps."
+                    )
+                }
+            } catch (e: Exception) {
+                currentStatus = if (forward) {
+                    getString(R.string.paper_advance_failed)
+                } else {
+                    getString(R.string.paper_retract_failed)
+                }
+                appendLog(
+                    "Paper ${if (forward) "advance" else "retract"} failed: " +
+                        (e.message ?: getString(R.string.unknown_error))
+                )
+            } finally {
+                finishTrackedJob(launchedJob)
+            }
+        }
+    }
+
+    private suspend fun withSavedPrinterManager(
+        printerAddress: String,
+        action: suspend (printerName: String, manager: BlePrinterManager) -> Unit
+    ) {
+        val activeManager = printerManager
+        if (activeManager?.isPrinterReady == true && appSettings.selectedPrinterAddress == printerAddress) {
+            action(connectedPrinterName ?: appSettings.selectedPrinterName ?: printerAddress, activeManager)
+            return
+        }
+
+        val printer = scanner.findFirstCompatiblePrinter(preferredAddress = printerAddress)
+        if (printer == null) {
+            currentStatus = getString(R.string.saved_printer_not_found)
+            return
+        }
+
+        val temporaryManager = BlePrinterManager(applicationContext) {}
+        try {
+            temporaryManager.connectAndInitialize(printer.device)
+            action(printer.displayName, temporaryManager)
+        } finally {
+            temporaryManager.release()
         }
     }
 
@@ -567,6 +640,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     private fun render() {
         val connected = printerManager?.isPrinterReady == true
+        val isBusy = currentJob?.isCompleted == false
         val printerName = connectedPrinterName ?: appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)
         val savedPrinterAddress = appSettings.selectedPrinterAddress
         val selectedPrinter = selectedScannedPrinterIndex?.takeIf { it in discoveredPrinters.indices }?.let(discoveredPrinters::get)
@@ -574,14 +648,14 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.printerValue.text = printerName
         binding.imageStatusValue.text = currentStatus
         binding.buttonImageConnection.text = if (connected) getString(R.string.connected) else getString(R.string.refresh)
-        binding.buttonImageConnection.isEnabled = connected.not() && currentJob?.isActive != true
+        binding.buttonImageConnection.isEnabled = connected.not() && !isBusy
         binding.imageSelectionValue.text = selectedImage?.let { prepared ->
             "${prepared.printWidth}x${prepared.printHeight} • ${prepared.ditheringMode.displayName}"
         } ?: getString(R.string.no_image_selected_label)
         binding.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
         binding.imagePreview.isVisible = selectedImage != null
         binding.buttonPickImage.isEnabled = true
-        binding.buttonPrintImage.isEnabled = connected && selectedImage != null && currentJob?.isActive != true
+        binding.buttonPrintImage.isEnabled = connected && selectedImage != null && !isBusy
 
         binding.savedPrinterValue.text = if (savedPrinterAddress == null) {
             getString(R.string.no_printer_selected)
@@ -596,9 +670,11 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         ignoreEnergySliderCallback = true
         binding.sliderEnergy.value = PrintEnergy.toPercent(appSettings.selectedPrintEnergy).toFloat()
         ignoreEnergySliderCallback = false
-        binding.buttonScanPrinters.isEnabled = currentJob?.isActive != true
-        binding.buttonSavePrinter.isEnabled = selectedPrinter != null && currentJob?.isActive != true
-        binding.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && currentJob?.isActive != true
+        binding.buttonScanPrinters.isEnabled = !isBusy
+        binding.buttonSavePrinter.isEnabled = selectedPrinter != null && !isBusy
+        binding.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
+        binding.buttonAdvancePaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
+        binding.buttonRetractPaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
         binding.buttonOpenLogs.isEnabled = true
         binding.scanStatus.text = when {
             discoveredPrinters.isNotEmpty() -> getString(R.string.printers_found, discoveredPrinters.size)

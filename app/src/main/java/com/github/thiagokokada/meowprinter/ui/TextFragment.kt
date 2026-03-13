@@ -179,7 +179,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     fun refreshConnectionSummary() {
-        renderConnectionSummary()
+        val summary = renderConnectionSummary()
+        binding?.buttonPrintDocument?.isEnabled = currentDocument.blocks.isNotEmpty() && summary?.isConnected == true
     }
 
     private fun renderConnectionSummary(): ConnectionSummary? {

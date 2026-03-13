@@ -32,7 +32,12 @@ class CanvasDocumentEditorTest {
     @Test
     fun duplicateBlockClonesContentAndInsertsNextToSource() {
         val first = TextBlock("1", "First", BlockAlignment.CENTER, CanvasTextSize.SP16)
-        val second = ImageBlock("2", "content://example/image.png", BlockAlignment.RIGHT)
+        val second = ImageBlock(
+            "2",
+            "content://example/image.png",
+            BlockAlignment.RIGHT,
+            width = ImageBlockWidth.THREE_QUARTERS
+        )
         val document = CanvasDocument(listOf(first, second))
 
         val updated = CanvasDocumentEditor.duplicateBlock(document, "1")
@@ -44,5 +49,21 @@ class CanvasDocumentEditorTest {
         assertEquals(first.markdown, duplicated.markdown)
         assertEquals(first.alignment, duplicated.alignment)
         assertEquals(first.textSize, duplicated.textSize)
+    }
+
+    @Test
+    fun duplicateImageBlockPreservesWidth() {
+        val image = ImageBlock(
+            "1",
+            "content://example/image.png",
+            BlockAlignment.CENTER,
+            width = ImageBlockWidth.HALF
+        )
+        val document = CanvasDocument(listOf(image))
+
+        val updated = CanvasDocumentEditor.duplicateBlock(document, "1")
+
+        val duplicated = updated.blocks[1] as ImageBlock
+        assertEquals(ImageBlockWidth.HALF, duplicated.width)
     }
 }

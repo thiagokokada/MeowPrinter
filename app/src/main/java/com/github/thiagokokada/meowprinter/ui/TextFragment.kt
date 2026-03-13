@@ -34,6 +34,7 @@ import com.github.thiagokokada.meowprinter.document.CanvasDocumentRenderer
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.document.DocumentBlock
 import com.github.thiagokokada.meowprinter.document.ImageBlock
+import com.github.thiagokokada.meowprinter.document.ImageBlockWidth
 import com.github.thiagokokada.meowprinter.document.TextBlock
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
@@ -423,6 +424,16 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             setupSpinner(spinner, DitheringMode.entries.map { it.displayName }, block.ditheringMode.ordinal)
             container.addView(spinner)
         }
+        val widthSpinner = Spinner(requireContext()).also { spinner ->
+            container.addView(
+                TextView(requireContext()).apply {
+                    text = getString(R.string.image_block_width_label)
+                    setPadding(0, dp(16), 0, dp(8))
+                }
+            )
+            setupSpinner(spinner, ImageBlockWidth.entries.map { it.displayName }, block.width.ordinal)
+            container.addView(spinner)
+        }
 
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.text_edit_image)
@@ -438,7 +449,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                         currentDocument,
                         block.copy(
                             alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
-                            ditheringMode = DitheringMode.entries[ditheringSpinner.selectedItemPosition]
+                            ditheringMode = DitheringMode.entries[ditheringSpinner.selectedItemPosition],
+                            width = ImageBlockWidth.entries[widthSpinner.selectedItemPosition]
                         )
                     )
                 )
@@ -500,7 +512,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 currentDocument,
                 newBlock.copy(
                     alignment = existingImageBlock?.alignment ?: BlockAlignment.CENTER,
-                    ditheringMode = existingImageBlock?.ditheringMode ?: DitheringMode.FLOYD_STEINBERG
+                    ditheringMode = existingImageBlock?.ditheringMode ?: DitheringMode.FLOYD_STEINBERG,
+                    width = existingImageBlock?.width ?: ImageBlockWidth.FULL
                 )
             )
         }

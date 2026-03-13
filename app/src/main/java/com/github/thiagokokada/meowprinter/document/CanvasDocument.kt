@@ -42,5 +42,6 @@ data class ImageBlock(
     override val id: String,
     val imageUri: String,
     override val alignment: BlockAlignment,
-    val ditheringMode: DitheringMode = DitheringMode.FLOYD_STEINBERG
+    val ditheringMode: DitheringMode = DitheringMode.FLOYD_STEINBERG,
+    val width: ImageBlockWidth = ImageBlockWidth.FULL
 ) : DocumentBlock

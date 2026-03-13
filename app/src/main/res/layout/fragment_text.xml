@@ -72,14 +72,6 @@
                         android:text="@string/text_add_image" />
                 </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/button_add_table_block"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/text_add_table" />
-
                 <TextView
                     android:id="@+id/text_blocks_label"
                     android:layout_width="wrap_content"

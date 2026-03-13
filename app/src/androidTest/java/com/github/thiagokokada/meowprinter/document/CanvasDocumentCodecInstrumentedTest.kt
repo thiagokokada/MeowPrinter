@@ -1,9 +1,9 @@
 package com.github.thiagokokada.meowprinter.document
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -15,25 +15,9 @@ class CanvasDocumentCodecInstrumentedTest {
             blocks = listOf(
                 TextBlock(
                     id = "text-1",
-                    text = "Bold text",
+                    markdown = "## Bold text\n\n| A | B |\n| --- | --- |\n| 1 | 2 |",
                     alignment = BlockAlignment.RIGHT,
-                    style = TextBlockStyle(
-                        isBold = true,
-                        isUnderline = true,
-                        fontFamily = CanvasFontFamily.SERIF,
-                        textSize = CanvasTextSize.LARGE
-                    )
-                ),
-                TableBlock(
-                    id = "table-1",
-                    alignment = BlockAlignment.CENTER,
-                    rows = 2,
-                    columns = 2,
-                    hasHeaderRow = true,
-                    cells = listOf(
-                        listOf("H1", "H2"),
-                        listOf("A", "B")
-                    )
+                    textSize = CanvasTextSize.LARGE
                 ),
                 ImageBlock(
                     id = "image-1",
@@ -46,13 +30,11 @@ class CanvasDocumentCodecInstrumentedTest {
 
         val restored = CanvasDocumentCodec.decode(CanvasDocumentCodec.encode(document))
 
-        assertEquals(3, restored.blocks.size)
+        assertEquals(2, restored.blocks.size)
         val textBlock = restored.blocks.first() as TextBlock
-        assertEquals("Bold text", textBlock.text)
+        assertEquals("## Bold text\n\n| A | B |\n| --- | --- |\n| 1 | 2 |", textBlock.markdown)
         assertEquals(BlockAlignment.RIGHT, textBlock.alignment)
-        assertTrue(textBlock.style.isBold)
-        assertEquals(CanvasFontFamily.SERIF, textBlock.style.fontFamily)
-        assertEquals(CanvasTextSize.LARGE, textBlock.style.textSize)
+        assertEquals(CanvasTextSize.LARGE, textBlock.textSize)
         val imageBlock = restored.blocks.last() as ImageBlock
         assertEquals(DitheringMode.ATKINSON, imageBlock.ditheringMode)
     }

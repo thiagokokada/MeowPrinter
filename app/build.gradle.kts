@@ -49,6 +49,8 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.nordic.ble)
     implementation(libs.ucrop)
+    implementation(libs.markwon.core)
+    implementation(libs.markwon.ext.tables)
     testImplementation(libs.junit)
     testImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.junit)

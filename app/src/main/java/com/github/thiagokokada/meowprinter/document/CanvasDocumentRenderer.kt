@@ -6,9 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ImageDecoder
-import android.graphics.Paint
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.view.Gravity
 import android.view.View
@@ -16,18 +13,22 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.TableLayout
-import android.widget.TableRow
 import android.widget.TextView
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.google.android.material.color.MaterialColors
+import io.noties.markwon.Markwon
+import io.noties.markwon.ext.tables.TablePlugin
 
 class CanvasDocumentRenderer(
     private val context: Context,
     private val contentResolver: ContentResolver
 ) {
+    private val markwon = Markwon.builder(context)
+        .usePlugin(TablePlugin.create(context))
+        .build()
+
     fun createPreviewBlockView(
         block: DocumentBlock,
         widthPx: Int
@@ -82,7 +83,6 @@ class CanvasDocumentRenderer(
         return when (block) {
             is TextBlock -> createTextBlockView(block, contentWidthPx, mode)
             is ImageBlock -> createImageBlockView(block, contentWidthPx)
-            is TableBlock -> createTableBlockView(block, mode)
         }
     }
 
@@ -91,12 +91,6 @@ class CanvasDocumentRenderer(
         contentWidthPx: Int,
         mode: RenderMode
     ): TextView {
-        val styleFlags = when {
-            block.style.isBold && block.style.isItalic -> Typeface.BOLD_ITALIC
-            block.style.isBold -> Typeface.BOLD
-            block.style.isItalic -> Typeface.ITALIC
-            else -> Typeface.NORMAL
-        }
         val textColor = if (mode == RenderMode.PRINT) {
             Color.BLACK
         } else {
@@ -109,22 +103,19 @@ class CanvasDocumentRenderer(
         }
         return TextView(context).apply {
             layoutParams = ViewGroup.LayoutParams(contentWidthPx, ViewGroup.LayoutParams.WRAP_CONTENT)
-            text = block.text
             setTextColor(textColor)
             setBackgroundColor(backgroundColor)
             textSize = if (mode == RenderMode.PRINT) {
-                block.style.textSize.printSp
+                block.textSize.printSp
             } else {
-                block.style.textSize.previewSp
+                block.textSize.previewSp
             }
-            typeface = block.style.fontFamily.toTypeface(styleFlags)
             includeFontPadding = false
             gravity = block.alignment.toGravity()
-            paintFlags = paintFlags or if (block.style.isUnderline) Paint.UNDERLINE_TEXT_FLAG else 0
-            paintFlags = paintFlags or if (block.style.isStrikethrough) Paint.STRIKE_THRU_TEXT_FLAG else 0
             if (mode == RenderMode.PRINT) {
                 setLineSpacing(2f, 1.05f)
             }
+            markwon.setMarkdown(this, block.markdown.ifBlank { " " })
         }
     }
 
@@ -177,65 +168,6 @@ class CanvasDocumentRenderer(
         return frame
     }
 
-    private fun createTableBlockView(
-        block: TableBlock,
-        mode: RenderMode
-    ): View {
-        val textColor = if (mode == RenderMode.PRINT) {
-            Color.BLACK
-        } else {
-            MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurface, Color.BLACK)
-        }
-        val backgroundColor = if (mode == RenderMode.PRINT) {
-            Color.WHITE
-        } else {
-            MaterialColors.getColor(
-                context,
-                com.google.android.material.R.attr.colorSurfaceContainerHighest,
-                Color.WHITE
-            )
-        }
-        val borderColor = if (mode == RenderMode.PRINT) {
-            Color.BLACK
-        } else {
-            MaterialColors.getColor(context, com.google.android.material.R.attr.colorOutline, Color.GRAY)
-        }
-        val wrapper = FrameLayout(context).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
-        val tableLayout = TableLayout(context).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                block.alignment.toLayoutGravity()
-            )
-            isShrinkAllColumns = true
-            isStretchAllColumns = true
-        }
-
-        block.cells.forEachIndexed { rowIndex, row ->
-            val tableRow = TableRow(context)
-            row.forEach { cell ->
-                tableRow.addView(
-                    TextView(context).apply {
-                        text = cell.ifBlank { " " }
-                        setPadding(12, 10, 12, 10)
-                        setTextColor(textColor)
-                        setBackground(createCellBorder(backgroundColor, borderColor))
-                        textSize = if (mode == RenderMode.PRINT) 14f else 13f
-                        if (block.hasHeaderRow && rowIndex == 0) {
-                            setTypeface(typeface, Typeface.BOLD)
-                        }
-                    }
-                )
-            }
-            tableLayout.addView(tableRow)
-        }
-
-        wrapper.addView(tableLayout)
-        return wrapper
-    }
-
     private fun decodeBitmap(imageUri: String, targetWidthPx: Int): Bitmap? {
         return runCatching {
             val source = ImageDecoder.createSource(contentResolver, Uri.parse(imageUri))
@@ -269,14 +201,6 @@ class CanvasDocumentRenderer(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 heightPx
             )
-        }
-    }
-
-    private fun createCellBorder(fillColor: Int, strokeColor: Int): GradientDrawable {
-        return GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            setColor(fillColor)
-            setStroke(1, strokeColor)
         }
     }
 

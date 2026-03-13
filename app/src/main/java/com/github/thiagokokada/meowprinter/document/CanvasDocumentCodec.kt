@@ -7,7 +7,7 @@ import org.json.JSONObject
 object CanvasDocumentCodec {
     fun encode(document: CanvasDocument): String {
         return JSONObject()
-            .put("version", 1)
+            .put("version", 2)
             .put("blocks", JSONArray().apply {
                 document.blocks.forEach { block ->
                     put(encodeBlock(block))
@@ -44,16 +44,9 @@ object CanvasDocumentCodec {
             is TextBlock -> JSONObject()
                 .put("type", "text")
                 .put("id", block.id)
-                .put("text", block.text)
+                .put("markdown", block.markdown)
                 .put("alignment", block.alignment.name)
-                .put("style", JSONObject()
-                    .put("bold", block.style.isBold)
-                    .put("italic", block.style.isItalic)
-                    .put("underline", block.style.isUnderline)
-                    .put("strikethrough", block.style.isStrikethrough)
-                    .put("fontFamily", block.style.fontFamily.name)
-                    .put("textSize", block.style.textSize.name)
-                )
+                .put("textSize", block.textSize.name)
 
             is ImageBlock -> JSONObject()
                 .put("type", "image")
@@ -61,42 +54,18 @@ object CanvasDocumentCodec {
                 .put("imageUri", block.imageUri)
                 .put("alignment", block.alignment.name)
                 .put("ditheringMode", block.ditheringMode.name)
-
-            is TableBlock -> JSONObject()
-                .put("type", "table")
-                .put("id", block.id)
-                .put("alignment", block.alignment.name)
-                .put("rows", block.rows)
-                .put("columns", block.columns)
-                .put("hasHeaderRow", block.hasHeaderRow)
-                .put("cells", JSONArray().apply {
-                    block.cells.forEach { row ->
-                        put(JSONArray().apply {
-                            row.forEach(::put)
-                        })
-                    }
-                })
         }
     }
 
     private fun decodeBlock(jsonObject: JSONObject): DocumentBlock? {
         return when (jsonObject.optString("type")) {
-            "text" -> {
-                val styleJson = jsonObject.optJSONObject("style") ?: JSONObject()
-                TextBlock(
-                    id = jsonObject.optString("id"),
-                    text = jsonObject.optString("text"),
-                    alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
-                    style = TextBlockStyle(
-                        isBold = styleJson.optBoolean("bold"),
-                        isItalic = styleJson.optBoolean("italic"),
-                        isUnderline = styleJson.optBoolean("underline"),
-                        isStrikethrough = styleJson.optBoolean("strikethrough"),
-                        fontFamily = CanvasFontFamily.fromStoredValue(styleJson.optString("fontFamily")),
-                        textSize = CanvasTextSize.fromStoredValue(styleJson.optString("textSize"))
-                    )
-                )
-            }
+            "text" -> TextBlock(
+                id = jsonObject.optString("id"),
+                markdown = jsonObject.optString("markdown")
+                    .ifBlank { jsonObject.optString("text") },
+                alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
+                textSize = decodeTextSize(jsonObject)
+            )
 
             "image" -> ImageBlock(
                 id = jsonObject.optString("id"),
@@ -105,27 +74,53 @@ object CanvasDocumentCodec {
                 ditheringMode = DitheringMode.fromStoredValue(jsonObject.optString("ditheringMode"))
             )
 
-            "table" -> {
-                val rows = jsonObject.optInt("rows").coerceAtLeast(1)
-                val columns = jsonObject.optInt("columns").coerceAtLeast(1)
-                val cellsJson = jsonObject.optJSONArray("cells") ?: JSONArray()
-                val cells = List(rows) { rowIndex ->
-                    val rowJson = cellsJson.optJSONArray(rowIndex) ?: JSONArray()
-                    List(columns) { columnIndex ->
-                        rowJson.optString(columnIndex)
-                    }
-                }
-                TableBlock(
-                    id = jsonObject.optString("id"),
-                    alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
-                    rows = rows,
-                    columns = columns,
-                    hasHeaderRow = jsonObject.optBoolean("hasHeaderRow"),
-                    cells = cells
-                )
-            }
+            // Migrate legacy table blocks into markdown text blocks so saved drafts still load.
+            "table" -> TextBlock(
+                id = jsonObject.optString("id"),
+                markdown = decodeLegacyTableMarkdown(jsonObject),
+                alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
+                textSize = CanvasTextSize.NORMAL
+            )
 
             else -> null
+        }
+    }
+
+    private fun decodeTextSize(jsonObject: JSONObject): CanvasTextSize {
+        val directValue = jsonObject.optString("textSize")
+        if (directValue.isNotBlank()) {
+            return CanvasTextSize.fromStoredValue(directValue)
+        }
+
+        val legacyStyle = jsonObject.optJSONObject("style")
+        return CanvasTextSize.fromStoredValue(legacyStyle?.optString("textSize"))
+    }
+
+    private fun decodeLegacyTableMarkdown(jsonObject: JSONObject): String {
+        val rows = jsonObject.optInt("rows").coerceAtLeast(1)
+        val columns = jsonObject.optInt("columns").coerceAtLeast(1)
+        val cellsJson = jsonObject.optJSONArray("cells") ?: JSONArray()
+        val cells = List(rows) { rowIndex ->
+            val rowJson = cellsJson.optJSONArray(rowIndex) ?: JSONArray()
+            List(columns) { columnIndex ->
+                rowJson.optString(columnIndex)
+            }
+        }
+
+        if (cells.isEmpty()) {
+            return ""
+        }
+
+        val header = cells.first()
+        val separator = List(header.size) { "---" }
+        val body = cells.drop(1)
+        val markdownRows = buildList {
+            add(header)
+            add(separator)
+            addAll(body)
+        }
+        return markdownRows.joinToString(separator = "\n") { row ->
+            row.joinToString(prefix = "| ", postfix = " |", separator = " | ")
         }
     }
 }

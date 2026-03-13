@@ -5,10 +5,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.thiagokokada.meowprinter.document.BlockAlignment
 import com.github.thiagokokada.meowprinter.document.CanvasDocument
+import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.document.TextBlock
-import com.github.thiagokokada.meowprinter.document.TextBlockStyle
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,9 +30,9 @@ class AppSettingsInstrumentedTest {
             blocks = listOf(
                 TextBlock(
                     id = "text-1",
-                    text = "Hello printer",
+                    markdown = "## Hello printer",
                     alignment = BlockAlignment.CENTER,
-                    style = TextBlockStyle(isBold = true)
+                    textSize = CanvasTextSize.LARGE
                 )
             )
         )
@@ -43,8 +42,8 @@ class AppSettingsInstrumentedTest {
         val restored = AppSettings(context).canvasDocumentDraft
         val restoredBlock = restored.blocks.single() as TextBlock
 
-        assertEquals("Hello printer", restoredBlock.text)
+        assertEquals("## Hello printer", restoredBlock.markdown)
         assertEquals(BlockAlignment.CENTER, restoredBlock.alignment)
-        assertTrue(restoredBlock.style.isBold)
+        assertEquals(CanvasTextSize.LARGE, restoredBlock.textSize)
     }
 }

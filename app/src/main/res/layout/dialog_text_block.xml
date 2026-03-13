@@ -20,8 +20,15 @@
                 android:gravity="top|start"
                 android:hint="@string/text_block_content_label"
                 android:inputType="textMultiLine|textCapSentences"
-                android:minLines="5" />
+                android:minLines="8" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/text_block_markdown_help"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -39,18 +46,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/text_block_font_label" />
-
-        <Spinner
-            android:id="@+id/spinner_text_block_font"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:text="@string/text_block_size_label" />
 
         <Spinner
@@ -58,30 +53,5 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp" />
-
-        <CheckBox
-            android:id="@+id/checkbox_text_block_bold"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/text_style_bold" />
-
-        <CheckBox
-            android:id="@+id/checkbox_text_block_italic"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/text_style_italic" />
-
-        <CheckBox
-            android:id="@+id/checkbox_text_block_underline"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/text_style_underline" />
-
-        <CheckBox
-            android:id="@+id/checkbox_text_block_strikethrough"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/text_style_strikethrough" />
     </LinearLayout>
 </ScrollView>

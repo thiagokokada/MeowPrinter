@@ -183,11 +183,11 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
             )
         }
+        binding.buttonImageConnection.setOnClickListener {
+            ensureBlePermissionsThen { maybeAutoConnect(force = true) }
+        }
         binding.buttonPrintImage.setOnClickListener {
             printSelectedImage()
-        }
-        binding.buttonRefreshStatus.setOnClickListener {
-            ensureBlePermissionsThen { maybeAutoConnect(force = true) }
         }
         binding.buttonTestPrint.setOnClickListener {
             ensureBlePermissionsThen { printTestPageFromCurrentPrinter() }
@@ -445,6 +445,24 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     override fun selectedTextDithering(): DitheringMode = appSettings.selectedDitheringMode
 
+    override fun connectionSummary(): ConnectionSummary {
+        val connected = printerManager?.isPrinterReady == true
+        val printerName = connectedPrinterName ?: appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)
+        val statusText = currentStatus
+        val actionLabel = if (connected) getString(R.string.connected) else getString(R.string.refresh)
+        return ConnectionSummary(
+            printerName = printerName,
+            statusText = statusText,
+            actionLabel = actionLabel,
+            actionEnabled = connected.not() && currentJob?.isActive != true,
+            isConnected = connected
+        )
+    }
+
+    override fun refreshPrinterConnection() {
+        ensureBlePermissionsThen { maybeAutoConnect(force = true) }
+    }
+
     private fun printTestPageFromCurrentPrinter() {
         val printerAddress = appSettings.selectedPrinterAddress
         if (printerAddress == null) {
@@ -554,15 +572,15 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         val selectedPrinter = selectedScannedPrinterIndex?.takeIf { it in discoveredPrinters.indices }?.let(discoveredPrinters::get)
 
         binding.printerValue.text = printerName
-        binding.connectionBadge.text = if (connected) getString(R.string.connected) else getString(R.string.disconnected)
-        binding.statusValue.text = currentStatus
+        binding.imageStatusValue.text = currentStatus
+        binding.buttonImageConnection.text = if (connected) getString(R.string.connected) else getString(R.string.refresh)
+        binding.buttonImageConnection.isEnabled = connected.not() && currentJob?.isActive != true
         binding.imageSelectionValue.text = selectedImage?.let { prepared ->
             "${prepared.printWidth}x${prepared.printHeight} • ${prepared.ditheringMode.displayName}"
         } ?: getString(R.string.no_image_selected_label)
         binding.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
         binding.imagePreview.isVisible = selectedImage != null
         binding.buttonPickImage.isEnabled = true
-        binding.buttonRefreshStatus.isEnabled = currentJob?.isActive != true
         binding.buttonPrintImage.isEnabled = connected && selectedImage != null && currentJob?.isActive != true
 
         binding.savedPrinterValue.text = if (savedPrinterAddress == null) {
@@ -590,6 +608,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
         binding.logsValue.text = LogStore.asText().ifBlank { getString(R.string.no_logs_yet) }
         renderPrinterChoices()
+        (supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment)
+            ?.refreshConnectionSummary()
     }
 
     private fun renderPrinterChoices() {

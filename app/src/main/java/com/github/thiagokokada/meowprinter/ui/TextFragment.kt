@@ -48,6 +48,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     interface Host {
         fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String)
         fun selectedTextDithering(): com.github.thiagokokada.meowprinter.image.DitheringMode
+        fun connectionSummary(): ConnectionSummary
+        fun refreshPrinterConnection()
     }
 
     private var binding: FragmentTextBinding? = null
@@ -112,7 +114,15 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         binding?.buttonAddTextBlock?.setOnClickListener { showTextBlockDialog() }
         binding?.buttonAddImageBlock?.setOnClickListener { startImageInsert() }
         binding?.buttonPrintDocument?.setOnClickListener { printDocument() }
+        binding?.buttonComposeConnection?.setOnClickListener {
+            host?.refreshPrinterConnection()
+        }
         renderDocument()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        renderConnectionSummary()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -131,8 +141,22 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     private fun renderDocument() {
+        val summary = renderConnectionSummary()
         renderBlockCards()
-        binding?.buttonPrintDocument?.isEnabled = currentDocument.blocks.isNotEmpty()
+        binding?.buttonPrintDocument?.isEnabled = currentDocument.blocks.isNotEmpty() && summary?.isConnected == true
+    }
+
+    fun refreshConnectionSummary() {
+        renderConnectionSummary()
+    }
+
+    private fun renderConnectionSummary(): ConnectionSummary? {
+        val summary = host?.connectionSummary() ?: return null
+        binding?.composePrinterValue?.text = summary.printerName
+        binding?.composeStatusValue?.text = summary.statusText
+        binding?.buttonComposeConnection?.text = summary.actionLabel
+        binding?.buttonComposeConnection?.isEnabled = summary.actionEnabled
+        return summary
     }
 
     private fun renderBlockCards() {
@@ -502,3 +526,11 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         private const val PRINT_RENDER_WIDTH_PX = 384
     }
 }
+
+data class ConnectionSummary(
+    val printerName: String,
+    val statusText: String,
+    val actionLabel: String,
+    val actionEnabled: Boolean,
+    val isConnected: Boolean
+)

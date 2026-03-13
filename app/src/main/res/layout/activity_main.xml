@@ -260,7 +260,7 @@
                             android:id="@+id/saved_printer_value"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textAppearance="?attr/textAppearanceBodyLarge" />
+                            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/button_test_print"

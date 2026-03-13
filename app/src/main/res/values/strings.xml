@@ -72,6 +72,10 @@
     <string name="permissions_rationale_long">Bluetooth permissions are required so the app can discover your BLE printer, connect to it, and receive print status updates.</string>
     <string name="permissions_open_settings">Bluetooth permissions were denied. Open the app settings and allow Bluetooth access so connecting and printing can work.</string>
     <string name="grant_permissions">Grant BLE permissions</string>
+    <string name="notification_permission_title">Notification permission needed</string>
+    <string name="notification_permission_rationale">Notifications are required so printing can continue in the background and you can cancel an active print from the notification.</string>
+    <string name="notification_permission_open_settings">Notification permission was denied. Open the app settings and allow notifications if you want background printing and quick cancel controls.</string>
+    <string name="grant_notification_permission">Allow notifications</string>
     <string name="open_app_settings">Open app settings</string>
     <string name="disconnect">Disconnect</string>
     <string name="disconnected">Disconnected</string>
@@ -79,6 +83,13 @@
     <string name="connecting">Connecting</string>
     <string name="bluetooth_permission_missing_idle">Bluetooth permission is needed before the app can auto-connect.</string>
     <string name="print_test_page">Print test page</string>
+    <string name="cancel_print">Cancel printing</string>
+    <string name="canceling_print">Canceling print...</string>
+    <string name="print_canceled">Print canceled.</string>
+    <string name="print_notification_title">Printing in progress</string>
+    <string name="print_notification_text">Meow Printer is sending data to the printer.</string>
+    <string name="print_notification_channel_name">Printing</string>
+    <string name="print_notification_channel_description">Shows active printer jobs and lets you cancel them.</string>
     <string name="advance_paper">Advance paper</string>
     <string name="retract_paper">Retract paper</string>
     <string name="pick_image">Pick image</string>

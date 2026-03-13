@@ -1,8 +1,10 @@
 package com.github.thiagokokada.meowprinter.ui
 
+import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.ArrayAdapter
@@ -30,6 +32,7 @@ import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
 import com.github.thiagokokada.meowprinter.print.PrinterTestPage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
@@ -56,12 +59,48 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private var ignorePrinterSelectionCallback = false
     private var ignoreEnergySliderCallback = false
     private var ignorePacingSliderCallback = false
+    private var isAppVisible = false
+    private var pendingNotificationPermissionAction: (() -> Unit)? = null
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
         if (hasBlePermissions()) {
             maybeAutoConnect(force = true)
+        }
+        render()
+    }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val pendingAction = pendingNotificationPermissionAction
+        pendingNotificationPermissionAction = null
+        if (granted) {
+            pendingAction?.invoke()
+            return@registerForActivityResult
+        }
+
+        if (shouldShowNotificationPermissionRationale()) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.notification_permission_title)
+                .setMessage(R.string.notification_permission_rationale)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.grant_notification_permission) { _, _ ->
+                    appSettings.hasRequestedNotificationPermission = true
+                    pendingNotificationPermissionAction = pendingAction
+                    requestNotificationPermission()
+                }
+                .show()
+        } else if (isNotificationPermissionPermanentlyDenied()) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.notification_permission_title)
+                .setMessage(R.string.notification_permission_open_settings)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.open_app_settings) { _, _ ->
+                    openAppSettings()
+                }
+                .show()
         }
         render()
     }
@@ -228,22 +267,35 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             if (selectedTabId == SCREEN_LOGS) R.id.navigation_settings else selectedTabId
 
         showScreen(selectedTabId)
+        handleIntent(intent)
         render()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
     }
 
     override fun onResume() {
         super.onResume()
+        isAppVisible = true
         maybeAutoConnect()
         render()
     }
 
     override fun onStop() {
-        disconnectForegroundConnection()
+        isAppVisible = false
+        if (!ActivePrintController.isPrintActive) {
+            disconnectForegroundConnection()
+        }
         super.onStop()
     }
 
     override fun onDestroy() {
         currentJob?.cancel()
+        ActivePrintController.finish()
+        PrintNotificationManager.dismiss(applicationContext)
         printerManager?.release()
         super.onDestroy()
     }
@@ -423,10 +475,21 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             return
         }
 
-        printPreparedImage(image, "selected image")
+        ensureNotificationPermissionThen {
+            startPrintPreparedImage(image, "selected image")
+        }
     }
 
     override fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String) {
+        ensureNotificationPermissionThen {
+            startPrintPreparedImage(preparedImage, sourceLabel)
+        }
+    }
+
+    private fun startPrintPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String) {
+        if (ActivePrintController.isPrintActive) {
+            return
+        }
         val manager = printerManager
         if (manager == null || !manager.isPrinterReady) {
             Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show()
@@ -435,6 +498,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         }
 
         runTrackedJob(getString(R.string.generating_image_print_job)) { launchedJob ->
+            beginActivePrint(launchedJob)
             try {
                 val energy = appSettings.selectedPrintEnergy
                 val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
@@ -453,10 +517,14 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
                 currentStatus = getString(R.string.printer_ready_again)
                 appendLog("Image print completed successfully.")
+            } catch (_: CancellationException) {
+                currentStatus = getString(R.string.print_canceled)
+                appendLog("Image print canceled.")
             } catch (e: Exception) {
                 currentStatus = getString(R.string.image_print_failed)
                 appendLog("Image print failed: ${e.message ?: getString(R.string.unknown_error)}")
             } finally {
+                endActivePrint()
                 finishTrackedJob(launchedJob)
             }
         }
@@ -482,7 +550,16 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         ensureBlePermissionsThen { maybeAutoConnect(force = true) }
     }
 
+    override fun isPrintInProgress(): Boolean = ActivePrintController.isPrintActive
+
     private fun printTestPageFromCurrentPrinter() {
+        if (ActivePrintController.isPrintActive) {
+            return
+        }
+        ensureNotificationPermissionThen(::startPrintTestPageFromCurrentPrinter)
+    }
+
+    private fun startPrintTestPageFromCurrentPrinter() {
         val printerAddress = appSettings.selectedPrinterAddress
         if (printerAddress == null) {
             Toast.makeText(this, R.string.select_printer_in_settings, Toast.LENGTH_SHORT).show()
@@ -494,6 +571,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         }
 
         runTrackedJob(getString(R.string.testing_saved_printer)) { launchedJob ->
+            beginActivePrint(launchedJob)
             try {
                 withSavedPrinterManager(printerAddress) { printerName, manager ->
                     val energy = appSettings.selectedPrintEnergy
@@ -508,9 +586,13 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                     appendLog("Test page printed on $printerName at $energyLabel.")
                     currentStatus = getString(R.string.test_page_sent)
                 }
+            } catch (_: CancellationException) {
+                currentStatus = getString(R.string.print_canceled)
+                appendLog("Test page print canceled.")
             } catch (e: Exception) {
                 currentStatus = getString(R.string.scan_failed_message, e.message ?: getString(R.string.unknown_error))
             } finally {
+                endActivePrint()
                 finishTrackedJob(launchedJob)
             }
         }
@@ -639,6 +721,34 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         currentJob = launchedJob
     }
 
+    private fun beginActivePrint(job: Job) {
+        ActivePrintController.start {
+            if (job.isActive) {
+                currentStatus = getString(R.string.canceling_print)
+                appendLog("Canceling active print job.")
+                job.cancel(CancellationException("Canceled by user."))
+                disconnectForegroundConnection()
+                render()
+            }
+        }
+        PrintNotificationManager.show(applicationContext)
+    }
+
+    private fun endActivePrint() {
+        ActivePrintController.finish()
+        PrintNotificationManager.dismiss(applicationContext)
+        if (!isAppVisible) {
+            disconnectForegroundConnection()
+        }
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.action == ACTION_CANCEL_PRINT) {
+            ActivePrintController.cancel()
+            intent.action = null
+        }
+    }
+
     private fun finishTrackedJob(job: Job) {
         if (currentJob === job) {
             currentJob = null
@@ -668,7 +778,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
         binding.imagePreview.isVisible = selectedImage != null
         binding.buttonPickImage.isEnabled = true
-        binding.buttonPrintImage.isEnabled = connected && selectedImage != null && !isBusy
+        binding.buttonPrintImage.isEnabled = connected && selectedImage != null && !ActivePrintController.isPrintActive && !isBusy
 
         val savedPrinterName = appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)
         binding.savedPrinterValue.text = savedPrinterName
@@ -797,6 +907,69 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         }
     }
 
+    private fun hasNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return true
+        }
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun ensureNotificationPermissionThen(onGranted: () -> Unit): Boolean {
+        if (hasNotificationPermission()) {
+            onGranted()
+            return true
+        }
+
+        pendingNotificationPermissionAction = onGranted
+        when {
+            shouldShowNotificationPermissionRationale() -> {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.notification_permission_title)
+                    .setMessage(R.string.notification_permission_rationale)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.grant_notification_permission) { _, _ ->
+                        appSettings.hasRequestedNotificationPermission = true
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    .show()
+            }
+            isNotificationPermissionPermanentlyDenied() -> {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.notification_permission_title)
+                    .setMessage(R.string.notification_permission_open_settings)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.open_app_settings) { _, _ ->
+                        openAppSettings()
+                    }
+                    .show()
+            }
+            else -> {
+                appSettings.hasRequestedNotificationPermission = true
+                requestNotificationPermission()
+            }
+        }
+        return false
+    }
+
+    private fun requestNotificationPermission() {
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun shouldShowNotificationPermissionRationale(): Boolean {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun isNotificationPermissionPermanentlyDenied(): Boolean {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !hasNotificationPermission() &&
+            appSettings.hasRequestedNotificationPermission &&
+            !shouldShowNotificationPermissionRationale()
+    }
+
     private fun shouldShowBlePermissionRationale(): Boolean {
         return BlePermissions.required.any { permission ->
             shouldShowRequestPermissionRationale(permission)
@@ -818,6 +991,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     companion object {
+        const val ACTION_CANCEL_PRINT = "com.github.thiagokokada.meowprinter.action.CANCEL_PRINT"
         private const val KEY_SELECTED_TAB = "selected_tab"
         private const val SCREEN_LOGS = -1
     }

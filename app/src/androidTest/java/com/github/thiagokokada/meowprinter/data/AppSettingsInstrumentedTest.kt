@@ -3,8 +3,12 @@ package com.github.thiagokokada.meowprinter.data
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.thiagokokada.meowprinter.ui.TextSizeOption
+import com.github.thiagokokada.meowprinter.document.BlockAlignment
+import com.github.thiagokokada.meowprinter.document.CanvasDocument
+import com.github.thiagokokada.meowprinter.document.TextBlock
+import com.github.thiagokokada.meowprinter.document.TextBlockStyle
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,16 +26,25 @@ class AppSettingsInstrumentedTest {
     }
 
     @Test
-    fun markdownDraftPersists() {
-        appSettings.markdownDraft = "# Test"
+    fun canvasDocumentDraftPersists() {
+        val draft = CanvasDocument(
+            blocks = listOf(
+                TextBlock(
+                    id = "text-1",
+                    text = "Hello printer",
+                    alignment = BlockAlignment.CENTER,
+                    style = TextBlockStyle(isBold = true)
+                )
+            )
+        )
 
-        assertEquals("# Test", AppSettings(context).markdownDraft)
-    }
+        appSettings.canvasDocumentDraft = draft
 
-    @Test
-    fun markdownTextSizePersists() {
-        appSettings.markdownTextSize = TextSizeOption.LARGE
+        val restored = AppSettings(context).canvasDocumentDraft
+        val restoredBlock = restored.blocks.single() as TextBlock
 
-        assertEquals(TextSizeOption.LARGE, AppSettings(context).markdownTextSize)
+        assertEquals("Hello printer", restoredBlock.text)
+        assertEquals(BlockAlignment.CENTER, restoredBlock.alignment)
+        assertTrue(restoredBlock.style.isBold)
     }
 }

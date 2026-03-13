@@ -8,6 +8,7 @@ import android.net.Uri
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import kotlin.math.max
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 
 data class PreparedPrintImage(
     val previewBitmap: Bitmap,
@@ -89,7 +90,7 @@ object ImagePrintPreparer {
         }
 
         val targetHeight = max(1, bitmap.height * CatPrinterProtocol.PRINT_WIDTH / bitmap.width)
-        return Bitmap.createScaledBitmap(bitmap, CatPrinterProtocol.PRINT_WIDTH, targetHeight, true)
+        return bitmap.scale(CatPrinterProtocol.PRINT_WIDTH, targetHeight)
     }
 
     private fun extractGrayscale(bitmap: Bitmap): FloatArray {

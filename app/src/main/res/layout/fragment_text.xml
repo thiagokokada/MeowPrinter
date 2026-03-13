@@ -42,89 +42,75 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
-                    android:text="@string/markdown_text_size_label"
+                    android:text="@string/text_add_block_label"
                     android:textAppearance="?attr/textAppearanceLabelLarge" />
-
-                <Spinner
-                    android:id="@+id/spinner_text_size"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/markdown_input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="top|start"
-                        android:hint="@string/markdown_input_label"
-                        android:inputType="textMultiLine|textCapSentences"
-                        android:minLines="10"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        tools:text="# Meow Printer\n\nThis is **Markdown**." />
-                </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/button_import_markdown"
+                        android:id="@+id/button_add_text_block"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/import_markdown" />
+                        android:text="@string/text_add_text" />
 
                     <Space
                         android:layout_width="12dp"
                         android:layout_height="1dp" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/button_export_markdown"
+                        android:id="@+id/button_add_image_block"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/export_markdown" />
+                        android:text="@string/text_add_image" />
                 </LinearLayout>
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_add_table_block"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/text_add_table" />
+
                 <TextView
+                    android:id="@+id/text_blocks_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
-                    android:text="@string/markdown_preview_label"
+                    android:text="@string/text_blocks_label"
                     android:textAppearance="?attr/textAppearanceLabelLarge" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/markdown_preview_card"
+                <TextView
+                    android:id="@+id/text_blocks_placeholder"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHighest">
+                    android:text="@string/text_blocks_placeholder"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:visibility="gone" />
 
-                    <TextView
-                        android:id="@+id/markdown_preview"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="16dp"
-                        android:textAppearance="?attr/textAppearanceBodyLarge"
-                        tools:text="Preview" />
-                </com.google.android.material.card.MaterialCardView>
+                <LinearLayout
+                    android:id="@+id/text_blocks_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/button_print_markdown"
+                    android:id="@+id/button_print_document"
                     style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
-                    android:text="@string/print_markdown" />
+                    android:text="@string/text_print_document" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

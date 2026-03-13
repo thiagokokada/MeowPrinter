@@ -60,7 +60,7 @@ class MainActivityTest {
     }
 
     @Test
-    fun openingTextShowsMarkdownFragment() {
+    fun openingTextShowsComposerFragment() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
 
         scenario?.onActivity { activity ->
@@ -77,7 +77,7 @@ class MainActivityTest {
             )
             assertEquals(
                 View.VISIBLE,
-                activity.findViewById<View>(R.id.markdown_input).visibility
+                activity.findViewById<View>(R.id.button_add_text_block).visibility
             )
         }
     }

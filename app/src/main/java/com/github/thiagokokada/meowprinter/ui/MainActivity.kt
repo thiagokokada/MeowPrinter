@@ -443,7 +443,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         }
     }
 
-    override fun selectedMarkdownDithering(): DitheringMode = appSettings.selectedDitheringMode
+    override fun selectedTextDithering(): DitheringMode = appSettings.selectedDitheringMode
 
     private fun printTestPageFromCurrentPrinter() {
         val printerAddress = appSettings.selectedPrinterAddress

@@ -657,15 +657,14 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.buttonPickImage.isEnabled = true
         binding.buttonPrintImage.isEnabled = connected && selectedImage != null && !isBusy
 
-        binding.savedPrinterValue.text = if (savedPrinterAddress == null) {
-            getString(R.string.no_printer_selected)
-        } else {
-            getString(
-                R.string.saved_printer_description,
-                appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected),
-                savedPrinterAddress
-            )
+        val savedPrinterName = appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)
+        binding.savedPrinterValue.text = savedPrinterName
+        binding.savedPrinterStatusValue.text = when {
+            savedPrinterAddress == null -> ""
+            connected && connectedPrinterName == appSettings.selectedPrinterName -> currentStatus
+            else -> getString(R.string.disconnected)
         }
+        binding.savedPrinterStatusValue.isVisible = savedPrinterAddress != null
         binding.energyValue.text = formatEnergy(PrintEnergy.toPercent(appSettings.selectedPrintEnergy))
         ignoreEnergySliderCallback = true
         binding.sliderEnergy.value = PrintEnergy.toPercent(appSettings.selectedPrintEnergy).toFloat()

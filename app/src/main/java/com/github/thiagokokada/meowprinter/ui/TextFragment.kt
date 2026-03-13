@@ -262,6 +262,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         contentInput.setText(block.markdown)
         setupSpinner(alignmentSpinner, BlockAlignment.entries.map { it.displayName }, block.alignment.ordinal)
         setupSpinner(sizeSpinner, CanvasTextSize.entries.map { it.displayName }, block.textSize.ordinal)
+        bindMarkdownHelperButtons(dialogView, contentInput)
 
         AlertDialog.Builder(requireContext())
             .setTitle(if (existingBlock == null) R.string.text_add_text else R.string.text_edit_text)
@@ -282,6 +283,59 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 )
             }
             .show()
+    }
+
+    private fun bindMarkdownHelperButtons(dialogView: View, contentInput: EditText) {
+        dialogView.findViewById<View>(R.id.button_markdown_h1).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.heading1(text, start, end)
+            }
+        }
+        dialogView.findViewById<View>(R.id.button_markdown_h2).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.heading2(text, start, end)
+            }
+        }
+        dialogView.findViewById<View>(R.id.button_markdown_bold).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.bold(text, start, end)
+            }
+        }
+        dialogView.findViewById<View>(R.id.button_markdown_italic).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.italic(text, start, end)
+            }
+        }
+        dialogView.findViewById<View>(R.id.button_markdown_list).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.bulletList(text, start, end)
+            }
+        }
+        dialogView.findViewById<View>(R.id.button_markdown_quote).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.blockquote(text, start, end)
+            }
+        }
+        dialogView.findViewById<View>(R.id.button_markdown_table).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.table(text, start, end)
+            }
+        }
+    }
+
+    private fun applyMarkdownEdit(
+        contentInput: EditText,
+        formatter: (text: String, selectionStart: Int, selectionEnd: Int) -> MarkdownEditResult
+    ) {
+        val currentText = contentInput.text?.toString().orEmpty()
+        val result = formatter(
+            currentText,
+            contentInput.selectionStart.coerceAtLeast(0),
+            contentInput.selectionEnd.coerceAtLeast(0)
+        )
+        contentInput.setText(result.text)
+        contentInput.requestFocus()
+        contentInput.setSelection(result.selectionStart, result.selectionEnd)
     }
 
     private fun showImageBlockDialog(block: ImageBlock) {

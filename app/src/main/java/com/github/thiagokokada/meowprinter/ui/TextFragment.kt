@@ -44,6 +44,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.typeface.IIcon
 import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
@@ -261,40 +262,44 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, dp(12), 0, 0)
-            addView(iconActionButton(R.drawable.ic_edit_24, R.string.edit) {
+            addView(iconActionButton(FontAwesome.Icon.faw_pen, R.string.edit) {
                 when (block) {
                     is TextBlock -> showTextBlockDialog(block)
                     is ImageBlock -> showImageBlockDialog(block)
                 }
             })
-            addView(iconActionButton(R.drawable.ic_content_copy_24, R.string.duplicate) {
+            addView(iconActionButton(FontAwesome.Icon.faw_clone, R.string.duplicate) {
                 updateDocument(CanvasDocumentEditor.duplicateBlock(currentDocument, block.id))
             })
-            addView(iconActionButton(R.drawable.ic_arrow_upward_24, R.string.move_up) {
+            addView(iconActionButton(FontAwesome.Icon.faw_arrow_up, R.string.move_up) {
                 updateDocument(CanvasDocumentEditor.moveBlock(currentDocument, block.id, -1))
             })
-            addView(iconActionButton(R.drawable.ic_arrow_downward_24, R.string.move_down) {
+            addView(iconActionButton(FontAwesome.Icon.faw_arrow_down, R.string.move_down) {
                 updateDocument(CanvasDocumentEditor.moveBlock(currentDocument, block.id, 1))
             })
-            addView(iconActionButton(R.drawable.ic_delete_24, R.string.delete) {
+            addView(iconActionButton(FontAwesome.Icon.faw_trash_alt, R.string.delete) {
                 updateDocument(CanvasDocumentEditor.removeBlock(currentDocument, block.id))
             })
         }
     }
 
-    private fun iconActionButton(iconRes: Int, descriptionRes: Int, onClick: () -> Unit): View {
+    private fun iconActionButton(icon: IIcon, descriptionRes: Int, onClick: () -> Unit): View {
         val context = requireContext()
+        val iconColor = MaterialColors.getColor(
+            context,
+            com.google.android.material.R.attr.colorOnSurfaceVariant,
+            0
+        )
         return AppCompatImageButton(context).apply {
-            setImageResource(iconRes)
+            setImageDrawable(
+                IconicsDrawable(context, icon).apply {
+                    sizeXPx = dp(18)
+                    sizeYPx = dp(18)
+                    tint = ColorStateList.valueOf(iconColor)
+                }
+            )
             contentDescription = getString(descriptionRes)
             background = null
-            setColorFilter(
-                MaterialColors.getColor(
-                    context,
-                    com.google.android.material.R.attr.colorOnSurfaceVariant,
-                    0
-                )
-            )
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             setPadding(dp(10), dp(10), dp(10), dp(10))
             setOnClickListener { onClick() }

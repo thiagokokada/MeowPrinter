@@ -249,6 +249,28 @@
                             android:text="@string/settings_subtitle"
                             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/button_scan_printers"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:text="@string/scan" />
+
+                        <Spinner
+                            android:id="@+id/spinner_printers"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/button_save_printer"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/save_selected_printer" />
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -304,28 +326,26 @@
                                 android:layout_weight="1"
                                 android:text="@string/retract_paper" />
                         </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/button_scan_printers"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="@string/scan" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:cardBackgroundColor="?attr/colorSurface">
 
-                        <Spinner
-                            android:id="@+id/spinner_printers"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/button_save_printer"
-                            style="@style/Widget.Material3.Button"
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="@string/save_selected_printer" />
+                            android:text="@string/printer_settings_section_title"
+                            android:textAppearance="?attr/textAppearanceTitleLarge" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -560,7 +580,6 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="20dp">
-
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"

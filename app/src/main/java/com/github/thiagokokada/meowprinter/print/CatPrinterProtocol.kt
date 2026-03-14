@@ -88,14 +88,24 @@ object CatPrinterProtocol {
         }
     }
 
-    fun commandsPrintImage(rows: List<BooleanArray>, energy: Int = 0xffff): ByteArray {
-        return commandsPrintImageCommands(rows, energy).fold(ByteArrayOutputStream()) { data, command ->
+    fun commandsPrintImage(
+        rows: List<BooleanArray>,
+        energy: Int = 0xffff,
+        printGapSteps: Int = PAPER_MOVE_STEPS,
+        endPaperPasses: Int = 3
+    ): ByteArray {
+        return commandsPrintImageCommands(rows, energy, printGapSteps, endPaperPasses).fold(ByteArrayOutputStream()) { data, command ->
             data.write(command)
             data
         }.toByteArray()
     }
 
-    fun commandsPrintImageCommands(rows: List<BooleanArray>, energy: Int = 0xffff): List<ByteArray> {
+    fun commandsPrintImageCommands(
+        rows: List<BooleanArray>,
+        energy: Int = 0xffff,
+        printGapSteps: Int = PAPER_MOVE_STEPS,
+        endPaperPasses: Int = 3
+    ): List<ByteArray> {
         return buildList {
             add(getDeviceState)
             add(setQuality200Dpi)
@@ -103,10 +113,10 @@ object CatPrinterProtocol {
             add(cmdApplyEnergy())
             add(latticeStart)
             rows.forEach { row -> add(cmdPrintRow(row)) }
-            add(cmdFeedPaper(25))
-            add(setPaper)
-            add(setPaper)
-            add(setPaper)
+            add(cmdFeedPaper(printGapSteps.coerceIn(0, 0xff)))
+            repeat(endPaperPasses.coerceIn(0, 3)) {
+                add(setPaper)
+            }
             add(latticeEnd)
             add(getDeviceState)
         }

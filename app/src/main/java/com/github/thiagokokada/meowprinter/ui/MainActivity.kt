@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
@@ -61,6 +62,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private var ignorePrinterSelectionCallback = false
     private var ignoreEnergySliderCallback = false
     private var ignorePacingSliderCallback = false
+    private var ignorePaperMoveFieldCallback = false
     private var isAppVisible = false
     private var pendingNotificationPermissionAction: (() -> Unit)? = null
 
@@ -227,7 +229,27 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             appSettings.selectedPrintPacingPercent = value.toInt()
             render()
         }
-
+        binding.inputPaperMoveSteps.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                commitPaperMoveStepsFromInput()
+                true
+            } else {
+                false
+            }
+        }
+        binding.inputPaperMoveSteps.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                commitPaperMoveStepsFromInput()
+            }
+        }
+        binding.buttonPaperSteps10.setOnClickListener { updatePaperMoveSteps(10) }
+        binding.buttonPaperSteps25.setOnClickListener { updatePaperMoveSteps(25) }
+        binding.buttonPaperSteps50.setOnClickListener { updatePaperMoveSteps(50) }
+        binding.buttonPaperSteps100.setOnClickListener { updatePaperMoveSteps(100) }
+        binding.buttonEndPaperPasses0.setOnClickListener { updateEndPaperPasses(0) }
+        binding.buttonEndPaperPasses1.setOnClickListener { updateEndPaperPasses(1) }
+        binding.buttonEndPaperPasses2.setOnClickListener { updateEndPaperPasses(2) }
+        binding.buttonEndPaperPasses3.setOnClickListener { updateEndPaperPasses(3) }
         binding.buttonPickImage.setOnClickListener {
             imagePickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -524,11 +546,13 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
                 val commands = CatPrinterProtocol.commandsPrintImageCommands(
                     preparedImage.rows,
-                    energy = energy
+                    energy = energy,
+                    printGapSteps = appSettings.selectedPaperMoveSteps,
+                    endPaperPasses = appSettings.selectedEndPaperPasses
                 )
                 val payloadSize = commands.sumOf { it.size }
                 appendLog(
-                    "Generated ${preparedImage.rows.size} rows and $payloadSize bytes from $sourceLabel at $energyLabel."
+                    "Generated ${preparedImage.rows.size} rows and $payloadSize bytes from $sourceLabel at $energyLabel. Gap ${appSettings.selectedPaperMoveSteps} steps, end passes ${appSettings.selectedEndPaperPasses}."
                 )
                 currentStatus = getString(R.string.printing_selected_image_with_energy, energyLabel)
                 render()
@@ -600,10 +624,12 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                     render()
                     val commands = CatPrinterProtocol.commandsPrintImageCommands(
                         PrinterTestPage.createRows(),
-                        energy = energy
+                        energy = energy,
+                        printGapSteps = appSettings.selectedPaperMoveSteps,
+                        endPaperPasses = appSettings.selectedEndPaperPasses
                     )
                     manager.printCommands(commands, currentPrintPacing())
-                    appendLog("Test page printed on $printerName at $energyLabel.")
+                    appendLog("Test page printed on $printerName at $energyLabel. Gap ${appSettings.selectedPaperMoveSteps} steps, end passes ${appSettings.selectedEndPaperPasses}.")
                     currentStatus = getString(R.string.test_page_sent)
                 }
             } catch (_: CancellationException) {
@@ -638,10 +664,11 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         runTrackedJob(progressStatus) { launchedJob ->
             try {
                 withSavedPrinterManager(printerAddress) { printerName, manager ->
+                    val steps = appSettings.selectedPaperMoveSteps
                     val payload = if (forward) {
-                        CatPrinterProtocol.cmdAdvancePaper()
+                        CatPrinterProtocol.cmdAdvancePaper(steps)
                     } else {
-                        CatPrinterProtocol.cmdRetractPaper()
+                        CatPrinterProtocol.cmdRetractPaper(steps)
                     }
                     manager.send(payload)
                     currentStatus = if (forward) {
@@ -651,7 +678,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                     }
                     appendLog(
                         "${if (forward) "Advanced" else "Retracted"} paper on $printerName by " +
-                            "${CatPrinterProtocol.PAPER_MOVE_STEPS} steps."
+                            "$steps steps."
                     )
                 }
             } catch (e: Exception) {
@@ -821,6 +848,16 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         ignorePacingSliderCallback = true
         binding.sliderPrintPacing.value = pacingPercent.toFloat()
         ignorePacingSliderCallback = false
+        val paperMoveSteps = appSettings.selectedPaperMoveSteps
+        val paperMoveStepsText = paperMoveSteps.toString()
+        if (binding.inputPaperMoveSteps.text?.toString() != paperMoveStepsText) {
+            ignorePaperMoveFieldCallback = true
+            binding.inputPaperMoveSteps.setText(paperMoveStepsText)
+            binding.inputPaperMoveSteps.setSelection(paperMoveStepsText.length)
+            ignorePaperMoveFieldCallback = false
+        }
+        binding.inputLayoutPaperMoveSteps.error = null
+        binding.endPaperPassesValue.text = getString(R.string.end_paper_passes_value, appSettings.selectedEndPaperPasses)
         binding.buttonScanPrinters.isEnabled = !isBusy
         binding.buttonSavePrinter.isEnabled = selectedPrinter != null && !isBusy
         binding.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
@@ -888,6 +925,30 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     private fun formatPrintPacing(percent: Int): String {
         return getString(R.string.print_pacing_value, percent)
+    }
+
+    private fun commitPaperMoveStepsFromInput() {
+        if (ignorePaperMoveFieldCallback) {
+            return
+        }
+        val rawValue = binding.inputPaperMoveSteps.text?.toString()?.trim().orEmpty()
+        val parsed = rawValue.toIntOrNull()
+        if (parsed == null) {
+            binding.inputLayoutPaperMoveSteps.error = getString(R.string.paper_move_steps_invalid)
+            return
+        }
+        binding.inputLayoutPaperMoveSteps.error = null
+        updatePaperMoveSteps(parsed)
+    }
+
+    private fun updatePaperMoveSteps(steps: Int) {
+        appSettings.selectedPaperMoveSteps = steps
+        render()
+    }
+
+    private fun updateEndPaperPasses(passes: Int) {
+        appSettings.selectedEndPaperPasses = passes
+        render()
     }
 
     private fun currentPrintPacing(): PrintPacing {

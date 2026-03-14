@@ -55,4 +55,14 @@ class AppSettingsInstrumentedTest {
 
         assertEquals(72, restored)
     }
+
+    @Test
+    fun paperStepSettingsPersist() {
+        appSettings.selectedPaperMoveSteps = 42
+
+        val restored = AppSettings(context)
+
+        assertEquals(42, restored.selectedPaperMoveSteps)
+        assertEquals(42, restored.selectedPrintGapSteps)
+    }
 }

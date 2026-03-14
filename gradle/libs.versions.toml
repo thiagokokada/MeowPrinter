@@ -15,6 +15,7 @@ lifecycleViewmodelKtx = "2.9.0"
 nordicBle = "2.11.0"
 ucrop = "2.2.11"
 markwon = "4.6.2"
+iconics = "5.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -33,6 +34,7 @@ nordic-ble = { group = "no.nordicsemi.android", name = "ble", version.ref = "nor
 ucrop = { group = "com.github.yalantis", name = "ucrop", version.ref = "ucrop" }
 markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
 markwon-ext-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markwon" }
+iconics-core = { group = "com.mikepenz", name = "iconics-core", version.ref = "iconics" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

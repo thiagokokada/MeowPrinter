@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import android.content.res.ColorStateList
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageButton
@@ -39,8 +40,12 @@ import com.github.thiagokokada.meowprinter.document.TextBlock
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
+import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.typeface.IIcon
+import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 import java.io.File
@@ -257,40 +262,44 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, dp(12), 0, 0)
-            addView(iconActionButton(R.drawable.ic_edit_24, R.string.edit) {
+            addView(iconActionButton(FontAwesome.Icon.faw_pen, R.string.edit) {
                 when (block) {
                     is TextBlock -> showTextBlockDialog(block)
                     is ImageBlock -> showImageBlockDialog(block)
                 }
             })
-            addView(iconActionButton(R.drawable.ic_content_copy_24, R.string.duplicate) {
+            addView(iconActionButton(FontAwesome.Icon.faw_clone, R.string.duplicate) {
                 updateDocument(CanvasDocumentEditor.duplicateBlock(currentDocument, block.id))
             })
-            addView(iconActionButton(R.drawable.ic_arrow_upward_24, R.string.move_up) {
+            addView(iconActionButton(FontAwesome.Icon.faw_arrow_up, R.string.move_up) {
                 updateDocument(CanvasDocumentEditor.moveBlock(currentDocument, block.id, -1))
             })
-            addView(iconActionButton(R.drawable.ic_arrow_downward_24, R.string.move_down) {
+            addView(iconActionButton(FontAwesome.Icon.faw_arrow_down, R.string.move_down) {
                 updateDocument(CanvasDocumentEditor.moveBlock(currentDocument, block.id, 1))
             })
-            addView(iconActionButton(R.drawable.ic_delete_24, R.string.delete) {
+            addView(iconActionButton(FontAwesome.Icon.faw_trash_alt, R.string.delete) {
                 updateDocument(CanvasDocumentEditor.removeBlock(currentDocument, block.id))
             })
         }
     }
 
-    private fun iconActionButton(iconRes: Int, descriptionRes: Int, onClick: () -> Unit): View {
+    private fun iconActionButton(icon: IIcon, descriptionRes: Int, onClick: () -> Unit): View {
         val context = requireContext()
+        val iconColor = MaterialColors.getColor(
+            context,
+            com.google.android.material.R.attr.colorOnSurfaceVariant,
+            0
+        )
         return AppCompatImageButton(context).apply {
-            setImageResource(iconRes)
+            setImageDrawable(
+                IconicsDrawable(context, icon).apply {
+                    sizeXPx = dp(18)
+                    sizeYPx = dp(18)
+                    tint = ColorStateList.valueOf(iconColor)
+                }
+            )
             contentDescription = getString(descriptionRes)
             background = null
-            setColorFilter(
-                MaterialColors.getColor(
-                    context,
-                    com.google.android.material.R.attr.colorOnSurfaceVariant,
-                    0
-                )
-            )
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             setPadding(dp(10), dp(10), dp(10), dp(10))
             setOnClickListener { onClick() }
@@ -354,14 +363,10 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     private fun bindMarkdownHelperButtons(dialogView: View, contentInput: EditText) {
+        bindMarkdownHelperIcons(dialogView)
         dialogView.findViewById<View>(R.id.button_markdown_h1).setOnClickListener {
             applyMarkdownEdit(contentInput) { text, start, end ->
                 MarkdownSnippetFormatter.heading1(text, start, end)
-            }
-        }
-        dialogView.findViewById<View>(R.id.button_markdown_h2).setOnClickListener {
-            applyMarkdownEdit(contentInput) { text, start, end ->
-                MarkdownSnippetFormatter.heading2(text, start, end)
             }
         }
         dialogView.findViewById<View>(R.id.button_markdown_bold).setOnClickListener {
@@ -379,6 +384,11 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 MarkdownSnippetFormatter.bulletList(text, start, end)
             }
         }
+        dialogView.findViewById<View>(R.id.button_markdown_numbered_list).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.numberedList(text, start, end)
+            }
+        }
         dialogView.findViewById<View>(R.id.button_markdown_quote).setOnClickListener {
             applyMarkdownEdit(contentInput) { text, start, end ->
                 MarkdownSnippetFormatter.blockquote(text, start, end)
@@ -387,6 +397,27 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         dialogView.findViewById<View>(R.id.button_markdown_table).setOnClickListener {
             applyMarkdownEdit(contentInput) { text, start, end ->
                 MarkdownSnippetFormatter.table(text, start, end)
+            }
+        }
+    }
+
+    private fun bindMarkdownHelperIcons(dialogView: View) {
+        val iconColor = MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface)
+        val iconSizePx = dp(20)
+        val icons = listOf(
+            R.id.button_markdown_h1 to FontAwesome.Icon.faw_heading,
+            R.id.button_markdown_bold to FontAwesome.Icon.faw_bold,
+            R.id.button_markdown_italic to FontAwesome.Icon.faw_italic,
+            R.id.button_markdown_list to FontAwesome.Icon.faw_list_ul,
+            R.id.button_markdown_numbered_list to FontAwesome.Icon.faw_list_ol,
+            R.id.button_markdown_quote to FontAwesome.Icon.faw_quote_right,
+            R.id.button_markdown_table to FontAwesome.Icon.faw_table
+        )
+        icons.forEach { (buttonId, icon) ->
+            dialogView.findViewById<MaterialButton>(buttonId).icon = IconicsDrawable(requireContext(), icon).apply {
+                sizeXPx = iconSizePx
+                sizeYPx = iconSizePx
+                tint = ColorStateList.valueOf(iconColor)
             }
         }
     }

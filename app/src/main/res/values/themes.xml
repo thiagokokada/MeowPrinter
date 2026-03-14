@@ -26,9 +26,27 @@
 
     <style name="Widget.MeowPrinter.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
         <item name="itemActiveIndicatorStyle">@style/Widget.MeowPrinter.BottomNavigation.ActiveIndicator</item>
+        <item name="itemIconTint">@color/bottom_navigation_item_colors</item>
+        <item name="itemTextColor">@color/bottom_navigation_item_colors</item>
     </style>
 
     <style name="Widget.MeowPrinter.BottomNavigation.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/meow_primary_container</item>
+        <item name="android:color">?attr/colorPrimaryContainer</item>
+    </style>
+
+    <style name="Widget.MeowPrinter.MarkdownIconButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:minWidth">48dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">0dp</item>
+        <item name="iconSize">20dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingLeft">0dp</item>
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingRight">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
     </style>
 </resources>

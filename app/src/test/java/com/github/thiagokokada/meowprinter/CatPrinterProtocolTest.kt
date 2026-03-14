@@ -102,4 +102,31 @@ class CatPrinterProtocolTest {
             )
         )
     }
+
+    @Test
+    fun commandsPrintImageUsesConfiguredGapSteps() {
+        val commands = CatPrinterProtocol.commandsPrintImageCommands(
+            listOf(BooleanArray(CatPrinterProtocol.PRINT_WIDTH)),
+            printGapSteps = 40
+        )
+
+        assertArrayEquals(
+            byteArrayOf(81, 120, -67, 0, 1, 0, 40, -40, -1),
+            commands[6]
+        )
+    }
+
+    @Test
+    fun commandsPrintImageUsesConfiguredEndPaperPasses() {
+        val commands = CatPrinterProtocol.commandsPrintImageCommands(
+            listOf(BooleanArray(CatPrinterProtocol.PRINT_WIDTH)),
+            endPaperPasses = 0
+        )
+
+        assertEquals(9, commands.size)
+        assertArrayEquals(
+            byteArrayOf(81, 120, -90, 0, 11, 0, -86, 85, 23, 0, 0, 0, 0, 0, 0, 0, 23, 17, -1),
+            commands[7]
+        )
+    }
 }

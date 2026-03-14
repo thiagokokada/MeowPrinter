@@ -34,6 +34,24 @@ class AppSettings(context: Context) {
             putInt(KEY_PRINT_PACING_PERCENT, value.coerceIn(0, 100))
         }
 
+    var selectedPaperMoveSteps: Int
+        get() = preferences.getInt(KEY_PAPER_MOVE_STEPS, DEFAULT_PAPER_MOVE_STEPS).coerceIn(0, MAX_PAPER_STEPS)
+        set(value) = preferences.edit {
+            putInt(KEY_PAPER_MOVE_STEPS, value.coerceIn(0, MAX_PAPER_STEPS))
+        }
+
+    var selectedPrintGapSteps: Int
+        get() = selectedPaperMoveSteps
+        set(value) {
+            selectedPaperMoveSteps = value
+        }
+
+    var selectedEndPaperPasses: Int
+        get() = preferences.getInt(KEY_END_PAPER_PASSES, DEFAULT_END_PAPER_PASSES).coerceIn(0, MAX_END_PAPER_PASSES)
+        set(value) = preferences.edit {
+            putInt(KEY_END_PAPER_PASSES, value.coerceIn(0, MAX_END_PAPER_PASSES))
+        }
+
     var hasRequestedBlePermissions: Boolean
         get() = preferences.getBoolean(KEY_REQUESTED_BLE_PERMISSIONS, false)
         set(value) = preferences.edit { putBoolean(KEY_REQUESTED_BLE_PERMISSIONS, value) }
@@ -53,9 +71,15 @@ class AppSettings(context: Context) {
         private const val KEY_DITHERING_MODE = "selected_dithering_mode"
         private const val KEY_PRINT_ENERGY = "selected_print_energy"
         private const val KEY_PRINT_PACING_PERCENT = "selected_print_pacing_percent"
+        private const val KEY_PAPER_MOVE_STEPS = "selected_paper_move_steps"
+        private const val KEY_END_PAPER_PASSES = "selected_end_paper_passes"
         private const val KEY_REQUESTED_BLE_PERMISSIONS = "requested_ble_permissions"
         private const val KEY_REQUESTED_NOTIFICATION_PERMISSION = "requested_notification_permission"
         private const val KEY_CANVAS_DOCUMENT_DRAFT = "canvas_document_draft"
         private const val DEFAULT_PRINT_PACING_PERCENT = 60
+        private const val DEFAULT_PAPER_MOVE_STEPS = 25
+        private const val MAX_PAPER_STEPS = 255
+        private const val DEFAULT_END_PAPER_PASSES = 3
+        private const val MAX_END_PAPER_PASSES = 3
     }
 }

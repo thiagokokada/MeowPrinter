@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import android.content.res.ColorStateList
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageButton
@@ -39,8 +40,11 @@ import com.github.thiagokokada.meowprinter.document.TextBlock
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
+import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 import java.io.File
@@ -354,14 +358,10 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     private fun bindMarkdownHelperButtons(dialogView: View, contentInput: EditText) {
+        bindMarkdownHelperIcons(dialogView)
         dialogView.findViewById<View>(R.id.button_markdown_h1).setOnClickListener {
             applyMarkdownEdit(contentInput) { text, start, end ->
                 MarkdownSnippetFormatter.heading1(text, start, end)
-            }
-        }
-        dialogView.findViewById<View>(R.id.button_markdown_h2).setOnClickListener {
-            applyMarkdownEdit(contentInput) { text, start, end ->
-                MarkdownSnippetFormatter.heading2(text, start, end)
             }
         }
         dialogView.findViewById<View>(R.id.button_markdown_bold).setOnClickListener {
@@ -379,6 +379,11 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 MarkdownSnippetFormatter.bulletList(text, start, end)
             }
         }
+        dialogView.findViewById<View>(R.id.button_markdown_numbered_list).setOnClickListener {
+            applyMarkdownEdit(contentInput) { text, start, end ->
+                MarkdownSnippetFormatter.numberedList(text, start, end)
+            }
+        }
         dialogView.findViewById<View>(R.id.button_markdown_quote).setOnClickListener {
             applyMarkdownEdit(contentInput) { text, start, end ->
                 MarkdownSnippetFormatter.blockquote(text, start, end)
@@ -387,6 +392,27 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         dialogView.findViewById<View>(R.id.button_markdown_table).setOnClickListener {
             applyMarkdownEdit(contentInput) { text, start, end ->
                 MarkdownSnippetFormatter.table(text, start, end)
+            }
+        }
+    }
+
+    private fun bindMarkdownHelperIcons(dialogView: View) {
+        val iconColor = MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface)
+        val iconSizePx = dp(20)
+        val icons = listOf(
+            R.id.button_markdown_h1 to FontAwesome.Icon.faw_heading,
+            R.id.button_markdown_bold to FontAwesome.Icon.faw_bold,
+            R.id.button_markdown_italic to FontAwesome.Icon.faw_italic,
+            R.id.button_markdown_list to FontAwesome.Icon.faw_list_ul,
+            R.id.button_markdown_numbered_list to FontAwesome.Icon.faw_list_ol,
+            R.id.button_markdown_quote to FontAwesome.Icon.faw_quote_right,
+            R.id.button_markdown_table to FontAwesome.Icon.faw_table
+        )
+        icons.forEach { (buttonId, icon) ->
+            dialogView.findViewById<MaterialButton>(buttonId).icon = IconicsDrawable(requireContext(), icon).apply {
+                sizeXPx = iconSizePx
+                sizeYPx = iconSizePx
+                tint = ColorStateList.valueOf(iconColor)
             }
         }
     }

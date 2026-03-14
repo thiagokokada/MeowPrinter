@@ -37,11 +37,11 @@
     <string name="block_title_text">Text block</string>
     <string name="block_title_image">Image block</string>
     <string name="text_block_content_label">Markdown</string>
-    <string name="markdown_helper_h1">Heading 1</string>
-    <string name="markdown_helper_h2">Heading 2</string>
+    <string name="markdown_helper_h1">Heading</string>
     <string name="markdown_helper_bold">Bold</string>
     <string name="markdown_helper_italic">Italic</string>
     <string name="markdown_helper_list">List</string>
+    <string name="markdown_helper_numbered_list">Numbered list</string>
     <string name="markdown_helper_quote">Quote</string>
     <string name="markdown_helper_table">Table</string>
     <string name="text_block_alignment_label">Alignment</string>

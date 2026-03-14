@@ -36,65 +36,51 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/button_markdown_h1"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="0dp"
-                    android:text="@string/markdown_helper_h1" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/button_markdown_h2"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:minWidth="0dp"
-                    android:text="@string/markdown_helper_h2" />
+                    style="@style/Widget.MeowPrinter.MarkdownIconButton"
+                    android:contentDescription="@string/markdown_helper_h1"
+                    android:tooltipText="@string/markdown_helper_h1" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/button_markdown_bold"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    style="@style/Widget.MeowPrinter.MarkdownIconButton"
                     android:layout_marginStart="8dp"
-                    android:minWidth="0dp"
-                    android:text="@string/markdown_helper_bold" />
+                    android:contentDescription="@string/markdown_helper_bold"
+                    android:tooltipText="@string/markdown_helper_bold" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/button_markdown_italic"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    style="@style/Widget.MeowPrinter.MarkdownIconButton"
                     android:layout_marginStart="8dp"
-                    android:minWidth="0dp"
-                    android:text="@string/markdown_helper_italic" />
+                    android:contentDescription="@string/markdown_helper_italic"
+                    android:tooltipText="@string/markdown_helper_italic" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/button_markdown_list"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    style="@style/Widget.MeowPrinter.MarkdownIconButton"
                     android:layout_marginStart="8dp"
-                    android:minWidth="0dp"
-                    android:text="@string/markdown_helper_list" />
+                    android:contentDescription="@string/markdown_helper_list"
+                    android:tooltipText="@string/markdown_helper_list" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_markdown_numbered_list"
+                    style="@style/Widget.MeowPrinter.MarkdownIconButton"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="@string/markdown_helper_numbered_list"
+                    android:tooltipText="@string/markdown_helper_numbered_list" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/button_markdown_quote"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    style="@style/Widget.MeowPrinter.MarkdownIconButton"
                     android:layout_marginStart="8dp"
-                    android:minWidth="0dp"
-                    android:text="@string/markdown_helper_quote" />
+                    android:contentDescription="@string/markdown_helper_quote"
+                    android:tooltipText="@string/markdown_helper_quote" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/button_markdown_table"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    style="@style/Widget.MeowPrinter.MarkdownIconButton"
                     android:layout_marginStart="8dp"
-                    android:minWidth="0dp"
-                    android:text="@string/markdown_helper_table" />
+                    android:contentDescription="@string/markdown_helper_table"
+                    android:tooltipText="@string/markdown_helper_table" />
             </LinearLayout>
         </HorizontalScrollView>
 

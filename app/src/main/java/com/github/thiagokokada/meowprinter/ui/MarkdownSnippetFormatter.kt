@@ -11,10 +11,6 @@ object MarkdownSnippetFormatter {
         return insertInlineSnippet(text, selectionStart, selectionEnd, "# ")
     }
 
-    fun heading2(text: String, selectionStart: Int, selectionEnd: Int): MarkdownEditResult {
-        return insertInlineSnippet(text, selectionStart, selectionEnd, "## ")
-    }
-
     fun bold(text: String, selectionStart: Int, selectionEnd: Int): MarkdownEditResult {
         return wrapSelection(text, selectionStart, selectionEnd, "**", "**", "bold")
     }
@@ -25,6 +21,10 @@ object MarkdownSnippetFormatter {
 
     fun bulletList(text: String, selectionStart: Int, selectionEnd: Int): MarkdownEditResult {
         return insertInlineSnippet(text, selectionStart, selectionEnd, "- ")
+    }
+
+    fun numberedList(text: String, selectionStart: Int, selectionEnd: Int): MarkdownEditResult {
+        return insertInlineSnippet(text, selectionStart, selectionEnd, "1. ")
     }
 
     fun blockquote(text: String, selectionStart: Int, selectionEnd: Int): MarkdownEditResult {

@@ -17,6 +17,7 @@
 - Keep BLE behavior conservative. Connection logic should remain compatible with the Nordic Android BLE library already in use.
 - Keep the Image / Compose / Settings structure consistent unless the task explicitly changes navigation.
 - Reuse the shared document render path for compose preview and printing instead of adding separate rendering flows.
+- Prefer the shared Android-Iconics icon packages for UI icons instead of hand-authored vector paths when a suitable icon already exists.
 
 ## Verification
 - Unit and build check: `./gradlew :app:assembleDebug :app:testDebugUnitTest`

@@ -29,6 +29,8 @@ import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
+import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
 import com.github.thiagokokada.meowprinter.print.PrinterTestPage
@@ -259,6 +261,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.buttonSavePrinter.setOnClickListener {
             saveSelectedPrinter()
         }
+        bindBottomNavigationIcons()
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             showScreen(item.itemId)
             true
@@ -324,6 +327,23 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             null
         }
         render()
+    }
+
+    private fun bindBottomNavigationIcons() {
+        val iconSizePx = dp(20)
+        val menu = binding.bottomNavigation.menu
+        menu.findItem(R.id.navigation_image).icon = IconicsDrawable(this, FontAwesome.Icon.faw_image).apply {
+            sizeXPx = iconSizePx
+            sizeYPx = iconSizePx
+        }
+        menu.findItem(R.id.navigation_text).icon = IconicsDrawable(this, FontAwesome.Icon.faw_pen).apply {
+            sizeXPx = iconSizePx
+            sizeYPx = iconSizePx
+        }
+        menu.findItem(R.id.navigation_settings).icon = IconicsDrawable(this, FontAwesome.Icon.faw_cog).apply {
+            sizeXPx = iconSizePx
+            sizeYPx = iconSizePx
+        }
     }
 
     private fun scanAndConnect() {
@@ -759,6 +779,10 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     private fun appendLog(message: String) {
         LogStore.append(message)
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     private fun render() {

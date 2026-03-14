@@ -26,10 +26,12 @@
 
     <style name="Widget.MeowPrinter.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
         <item name="itemActiveIndicatorStyle">@style/Widget.MeowPrinter.BottomNavigation.ActiveIndicator</item>
+        <item name="itemIconTint">@color/bottom_navigation_item_colors</item>
+        <item name="itemTextColor">@color/bottom_navigation_item_colors</item>
     </style>
 
     <style name="Widget.MeowPrinter.BottomNavigation.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/meow_primary_container</item>
+        <item name="android:color">?attr/colorPrimaryContainer</item>
     </style>
 
     <style name="Widget.MeowPrinter.MarkdownIconButton" parent="Widget.Material3.Button.OutlinedButton">

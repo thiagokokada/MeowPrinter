@@ -18,6 +18,33 @@ Android app for BLE thermal printers that use the reverse-engineered Cats / Meow
 - A compatible BLE printer that uses the Cat / Meow protocol
 - Bluetooth permissions granted to the app
 
+## Compatible Printers
+
+This app targets BLE thermal printers that use the reverse-engineered Cat / Meow protocol family, typically exposed over the `ae30/ae01/ae02` GATT service and characteristics.
+
+Known working / commonly reported Cat / Meow protocol models:
+
+- `GB01`
+- `GB02`
+- `GB03`
+- `GT01`
+- `YT01`
+- `MX05`
+- `MX06`
+- `MX08`
+- `MX10`
+
+Known non-compatible family:
+
+- `YHK-xxxx` / `WalkPrint` printers that use Classic Bluetooth instead of the Cat / Meow BLE GATT protocol
+
+If your printer is sold under a different storefront name, the model identifier shown in Bluetooth advertising is usually the useful compatibility clue.
+
+Compatibility references:
+
+- NaitLee `Cat-Printer` known supported models: <https://github.com/NaitLee/Cat-Printer>
+- YHK Classic Bluetooth incompatibility note: <https://github.com/abhigkar/YHK-Cat-Thermal-Printer>
+
 ## Build
 
 ```sh

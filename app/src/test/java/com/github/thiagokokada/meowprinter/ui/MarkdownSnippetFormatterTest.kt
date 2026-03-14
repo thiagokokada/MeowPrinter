@@ -33,10 +33,10 @@ class MarkdownSnippetFormatterTest {
 
     @Test
     fun headingInsertsAtCurrentLineStart() {
-        val result = MarkdownSnippetFormatter.heading2("Line one\nLine two", 9, 9)
+        val result = MarkdownSnippetFormatter.heading1("Line one\nLine two", 9, 9)
 
-        assertEquals("Line one\n## Line two", result.text)
-        assertEquals(12, result.selectionStart)
-        assertEquals(12, result.selectionEnd)
+        assertEquals("Line one\n# Line two", result.text)
+        assertEquals(11, result.selectionStart)
+        assertEquals(11, result.selectionEnd)
     }
 }

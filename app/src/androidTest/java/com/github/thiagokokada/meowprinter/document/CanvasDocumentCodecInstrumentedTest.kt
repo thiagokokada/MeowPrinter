@@ -79,7 +79,7 @@ class CanvasDocumentCodecInstrumentedTest {
         val restored = CanvasDocumentCodec.decodeImported(exported, documentImageStore)
         val restoredBlock = restored.blocks.single() as ImageBlock
 
-        assertTrue(exported.contains("\"version\":4"))
+        assertTrue(exported.contains("\"version\":1"))
         assertTrue(exported.contains("\"dataBase64\""))
         assertTrue(restoredBlock.imageUri.startsWith("content://"))
         assertEquals(DitheringMode.ORDERED_4X4, restoredBlock.ditheringMode)

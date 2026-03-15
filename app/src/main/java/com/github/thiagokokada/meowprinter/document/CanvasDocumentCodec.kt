@@ -9,7 +9,7 @@ import java.util.Base64
 object CanvasDocumentCodec {
     fun encode(document: CanvasDocument): String {
         return JSONObject()
-            .put("version", INTERNAL_VERSION)
+            .put("version", CURRENT_VERSION)
             .put("blocks", JSONArray().apply {
                 document.blocks.forEach { block ->
                     put(encodeBlock(block))
@@ -20,7 +20,7 @@ object CanvasDocumentCodec {
 
     fun encodeForExport(document: CanvasDocument, imageStore: DocumentImageStore): String {
         return JSONObject()
-            .put("version", EXPORTED_IMAGE_VERSION)
+            .put("version", CURRENT_VERSION)
             .put("blocks", JSONArray().apply {
                 document.blocks.forEach { block ->
                     put(encodeBlockForExport(block, imageStore))
@@ -112,10 +112,9 @@ object CanvasDocumentCodec {
         return when (jsonObject.optString("type")) {
             "text" -> TextBlock(
                 id = jsonObject.optString("id"),
-                markdown = jsonObject.optString("markdown")
-                    .ifBlank { jsonObject.optString("text") },
+                markdown = jsonObject.optString("markdown"),
                 alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
-                textSize = decodeTextSize(jsonObject)
+                textSize = CanvasTextSize.fromStoredValue(jsonObject.optString("textSize"))
             )
 
             "image" -> ImageBlock(
@@ -124,14 +123,6 @@ object CanvasDocumentCodec {
                 alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
                 ditheringMode = DitheringMode.fromStoredValue(jsonObject.optString("ditheringMode")),
                 width = ImageBlockWidth.fromStoredValue(jsonObject.optString("width"))
-            )
-
-            // Migrate legacy table blocks into markdown text blocks so saved drafts still load.
-            "table" -> TextBlock(
-                id = jsonObject.optString("id"),
-                markdown = decodeLegacyTableMarkdown(jsonObject),
-                alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
-                textSize = CanvasTextSize.SP14
             )
 
             else -> null
@@ -147,65 +138,24 @@ object CanvasDocumentCodec {
         }
 
         val imageObject = jsonObject.optJSONObject("image")
-        val embeddedImageData = imageObject
             ?.takeIf { it.optString("storage") == "embedded" }
-            ?.let { embedded ->
-                val mimeType = embedded.optString("mimeType").ifBlank { DEFAULT_EMBEDDED_IMAGE_MIME_TYPE }
-                val data = embedded.optString("dataBase64")
-                    .takeIf(String::isNotBlank)
-                    ?.let { Base64.getDecoder().decode(it) }
-                    ?: return null
-                imageStore.persistEmbeddedImage(mimeType, data)
-            }
+            ?: return null
+        val mimeType = imageObject.optString("mimeType").ifBlank { DEFAULT_EMBEDDED_IMAGE_MIME_TYPE }
+        val data = imageObject.optString("dataBase64")
+            .takeIf(String::isNotBlank)
+            ?.let { Base64.getDecoder().decode(it) }
+            ?: return null
+        val embeddedImageUri = imageStore.persistEmbeddedImage(mimeType, data)
 
         return ImageBlock(
             id = jsonObject.optString("id"),
-            imageUri = embeddedImageData ?: jsonObject.optString("imageUri"),
+            imageUri = embeddedImageUri,
             alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
             ditheringMode = DitheringMode.fromStoredValue(jsonObject.optString("ditheringMode")),
             width = ImageBlockWidth.fromStoredValue(jsonObject.optString("width"))
         )
     }
 
-    private fun decodeTextSize(jsonObject: JSONObject): CanvasTextSize {
-        val directValue = jsonObject.optString("textSize")
-        if (directValue.isNotBlank()) {
-            return CanvasTextSize.fromStoredValue(directValue)
-        }
-
-        val legacyStyle = jsonObject.optJSONObject("style")
-        return CanvasTextSize.fromStoredValue(legacyStyle?.optString("textSize"))
-    }
-
-    private fun decodeLegacyTableMarkdown(jsonObject: JSONObject): String {
-        val rows = jsonObject.optInt("rows").coerceAtLeast(1)
-        val columns = jsonObject.optInt("columns").coerceAtLeast(1)
-        val cellsJson = jsonObject.optJSONArray("cells") ?: JSONArray()
-        val cells = List(rows) { rowIndex ->
-            val rowJson = cellsJson.optJSONArray(rowIndex) ?: JSONArray()
-            List(columns) { columnIndex ->
-                rowJson.optString(columnIndex)
-            }
-        }
-
-        if (cells.isEmpty()) {
-            return ""
-        }
-
-        val header = cells.first()
-        val separator = List(header.size) { "---" }
-        val body = cells.drop(1)
-        val markdownRows = buildList {
-            add(header)
-            add(separator)
-            addAll(body)
-        }
-        return markdownRows.joinToString(separator = "\n") { row ->
-            row.joinToString(prefix = "| ", postfix = " |", separator = " | ")
-        }
-    }
-
-    private const val INTERNAL_VERSION = 3
-    private const val EXPORTED_IMAGE_VERSION = 4
+    private const val CURRENT_VERSION = 1
     private const val DEFAULT_EMBEDDED_IMAGE_MIME_TYPE = "image/jpeg"
 }

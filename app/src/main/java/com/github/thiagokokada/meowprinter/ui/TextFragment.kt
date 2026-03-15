@@ -46,8 +46,6 @@ import com.google.android.material.color.MaterialColors
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.IIcon
 import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
-import com.yalantis.ucrop.UCrop
-import com.yalantis.ucrop.UCropActivity
 import java.io.File
 import java.util.UUID
 import org.json.JSONObject
@@ -84,7 +82,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     ) { result ->
         when (result.resultCode) {
             android.app.Activity.RESULT_OK -> {
-                val editedUri = result.data?.let(UCrop::getOutput)
+                val editedUri = result.data?.data
                 if (editedUri == null) {
                     Toast.makeText(requireContext(), R.string.text_image_edit_failed, Toast.LENGTH_SHORT).show()
                     appendLog("Text editor image flow finished without an output URI.")
@@ -98,9 +96,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             }
 
             else -> {
-                val error = result.data?.let(UCrop::getError)
                 Toast.makeText(requireContext(), R.string.text_image_edit_failed, Toast.LENGTH_SHORT).show()
-                appendLog("Text editor image flow failed: ${error?.message ?: getString(R.string.unknown_error)}")
+                appendLog("Text editor image flow failed.")
             }
         }
     }
@@ -506,29 +503,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         val destinationUri = Uri.fromFile(
             File(requireContext().cacheDir, "document-image-${System.currentTimeMillis()}.png")
         )
-        val options = UCrop.Options().apply {
-            setCompressionFormat(Bitmap.CompressFormat.PNG)
-            setCompressionQuality(100)
-            setHideBottomControls(false)
-            setFreeStyleCropEnabled(true)
-            setToolbarColor(ContextCompat.getColor(requireContext(), R.color.meow_surface))
-            setToolbarWidgetColor(ContextCompat.getColor(requireContext(), R.color.meow_on_surface))
-            setActiveControlsWidgetColor(ContextCompat.getColor(requireContext(), R.color.meow_secondary))
-            setRootViewBackgroundColor(ContextCompat.getColor(requireContext(), R.color.meow_background))
-            setDimmedLayerColor(ContextCompat.getColor(requireContext(), R.color.meow_primary_container))
-            setCropGridColor(ContextCompat.getColor(requireContext(), R.color.meow_outline))
-            setCropFrameColor(ContextCompat.getColor(requireContext(), R.color.meow_secondary))
-        }
-        val intent = UCrop.of(sourceUri, destinationUri)
-            .withOptions(options)
-            .getIntent(requireContext())
-            .apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                setClass(requireContext(), UCropActivity::class.java)
-            }
-
-        imageEditorLauncher.launch(intent)
+        imageEditorLauncher.launch(ImageCropActivity.intent(requireContext(), sourceUri, destinationUri))
     }
 
     private fun onEditedImageReady(editedUri: Uri) {

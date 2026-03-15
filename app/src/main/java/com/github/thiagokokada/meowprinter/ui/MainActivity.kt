@@ -40,8 +40,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import java.io.File
-import com.yalantis.ucrop.UCrop
-import com.yalantis.ucrop.UCropActivity
 
 class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var binding: ActivityMainBinding
@@ -124,7 +122,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     ) { result ->
         when (result.resultCode) {
             RESULT_OK -> {
-                val editedUri = result.data?.let(UCrop::getOutput)
+                val editedUri = result.data?.data
                 if (editedUri == null) {
                     currentStatus = getString(R.string.image_edit_failed)
                     appendLog("Image editing finished without an output file.")
@@ -146,9 +144,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             }
 
             else -> {
-                val error = result.data?.let(UCrop::getError)
                 currentStatus = getString(R.string.image_edit_failed)
-                appendLog("Image editing failed: ${error?.message ?: getString(R.string.unknown_error)}")
+                appendLog("Image editing failed.")
                 render()
             }
         }
@@ -453,29 +450,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         val destinationUri = Uri.fromFile(
             File(cacheDir, "edited-${System.currentTimeMillis()}.png")
         )
-        val options = UCrop.Options().apply {
-            setCompressionFormat(android.graphics.Bitmap.CompressFormat.PNG)
-            setCompressionQuality(100)
-            setHideBottomControls(false)
-            setFreeStyleCropEnabled(true)
-            setToolbarColor(ContextCompat.getColor(this@MainActivity, R.color.meow_surface))
-            setToolbarWidgetColor(ContextCompat.getColor(this@MainActivity, R.color.meow_on_surface))
-            setActiveControlsWidgetColor(ContextCompat.getColor(this@MainActivity, R.color.meow_secondary))
-            setRootViewBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.meow_background))
-            setDimmedLayerColor(ContextCompat.getColor(this@MainActivity, R.color.meow_primary_container))
-            setCropGridColor(ContextCompat.getColor(this@MainActivity, R.color.meow_outline))
-            setCropFrameColor(ContextCompat.getColor(this@MainActivity, R.color.meow_secondary))
-        }
-        val intent = UCrop.of(sourceUri, destinationUri)
-            .withOptions(options)
-            .getIntent(this)
-            .apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                setClass(this@MainActivity, UCropActivity::class.java)
-            }
-
-        imageEditorLauncher.launch(intent)
+        imageEditorLauncher.launch(ImageCropActivity.intent(this, sourceUri, destinationUri))
     }
 
     private suspend fun connectToPrinter(printer: DiscoveredPrinter) {

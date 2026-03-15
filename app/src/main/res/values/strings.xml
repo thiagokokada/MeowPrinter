@@ -112,6 +112,13 @@
     <string name="retract_paper">Retract paper</string>
     <string name="pick_image">Pick image</string>
     <string name="editing_image">Opening image editor...</string>
+    <string name="image_crop_title">Adjust image</string>
+    <string name="image_crop_rotate_left">Rotate left</string>
+    <string name="image_crop_rotate_right">Rotate right</string>
+    <string name="image_crop_save">Save</string>
+    <string name="image_crop_failed">Image editing failed.</string>
+    <string name="image_crop_source_missing">Missing source image.</string>
+    <string name="image_crop_output_missing">Missing output image destination.</string>
     <string name="print_image">Print image</string>
     <string name="image_selection_label">Prepared image</string>
     <string name="image_preview">Prepared image preview</string>

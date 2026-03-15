@@ -76,7 +76,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.nordic.ble)
-    implementation(libs.ucrop)
+    implementation(libs.android.image.cropper)
     implementation(libs.markwon.core)
     implementation(libs.markwon.ext.tables)
     implementation(libs.iconics.core)

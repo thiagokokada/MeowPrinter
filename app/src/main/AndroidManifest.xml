@@ -22,9 +22,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MeowPrinter">
         <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
+            android:name=".ui.ImageCropActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            android:theme="@style/Theme.MeowPrinter" />
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"

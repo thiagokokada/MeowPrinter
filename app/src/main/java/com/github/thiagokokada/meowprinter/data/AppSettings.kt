@@ -5,6 +5,8 @@ import androidx.core.content.edit
 import com.github.thiagokokada.meowprinter.document.CanvasDocument
 import com.github.thiagokokada.meowprinter.document.CanvasDocumentCodec
 import com.github.thiagokokada.meowprinter.image.DitheringMode
+import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
+import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
 
 class AppSettings(context: Context) {
@@ -21,6 +23,14 @@ class AppSettings(context: Context) {
     var selectedDitheringMode: DitheringMode
         get() = DitheringMode.fromStoredValue(preferences.getString(KEY_DITHERING_MODE, null))
         set(value) = preferences.edit { putString(KEY_DITHERING_MODE, value.name) }
+
+    var selectedImageProcessingMode: ImageProcessingMode
+        get() = ImageProcessingMode.fromStoredValue(preferences.getString(KEY_IMAGE_PROCESSING_MODE, null))
+        set(value) = preferences.edit { putString(KEY_IMAGE_PROCESSING_MODE, value.name) }
+
+    var selectedImageResizerMode: ImageResizerMode
+        get() = ImageResizerMode.fromStoredValue(preferences.getString(KEY_IMAGE_RESIZER_MODE, null))
+        set(value) = preferences.edit { putString(KEY_IMAGE_RESIZER_MODE, value.name) }
 
     var selectedPrintEnergy: Int
         get() = preferences.getInt(KEY_PRINT_ENERGY, PrintEnergy.MAX_VALUE).coerceIn(0, PrintEnergy.MAX_VALUE)
@@ -69,6 +79,8 @@ class AppSettings(context: Context) {
         private const val KEY_PRINTER_ADDRESS = "selected_printer_address"
         private const val KEY_PRINTER_NAME = "selected_printer_name"
         private const val KEY_DITHERING_MODE = "selected_dithering_mode"
+        private const val KEY_IMAGE_PROCESSING_MODE = "selected_image_processing_mode"
+        private const val KEY_IMAGE_RESIZER_MODE = "selected_image_resizer_mode"
         private const val KEY_PRINT_ENERGY = "selected_print_energy"
         private const val KEY_PRINT_PACING_PERCENT = "selected_print_pacing_percent"
         private const val KEY_PAPER_MOVE_STEPS = "selected_paper_move_steps"

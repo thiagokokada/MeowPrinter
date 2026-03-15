@@ -18,13 +18,15 @@ import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
+import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.google.android.material.color.MaterialColors
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 
 class CanvasDocumentRenderer(
     private val context: Context,
-    private val contentResolver: ContentResolver
+    private val contentResolver: ContentResolver,
+    private val resizerModeProvider: () -> ImageResizerMode = { ImageResizerMode.SYSTEM_FILTERED }
 ) {
     private val markwon = Markwon.builder(context)
         .usePlugin(TablePlugin.create(context))
@@ -152,7 +154,13 @@ class CanvasDocumentRenderer(
             bitmap
         }
         val renderedBitmap = ImagePrintPreparer
-            .prepare(scaledBitmap, block.ditheringMode)
+            .prepare(
+                sourceBitmap = scaledBitmap,
+                ditheringMode = block.ditheringMode,
+                processingMode = block.processingMode,
+                resizerMode = resizerModeProvider(),
+                targetWidth = targetWidthPx
+            )
             .previewBitmap
 
         frame.addView(

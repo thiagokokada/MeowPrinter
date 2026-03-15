@@ -38,6 +38,8 @@ import com.github.thiagokokada.meowprinter.document.ImageBlockWidth
 import com.github.thiagokokada.meowprinter.document.TextBlock
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
+import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
+import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -127,7 +129,9 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         host = context as? Host
         appSettings = AppSettings(context.applicationContext)
         documentImageStore = DocumentImageStore(context.applicationContext)
-        documentRenderer = CanvasDocumentRenderer(context, context.contentResolver)
+        documentRenderer = CanvasDocumentRenderer(context, context.contentResolver) {
+            appSettings.selectedImageResizerMode
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -470,6 +474,16 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             setupSpinner(spinner, ImageBlockWidth.entries.map { it.displayName }, block.width.ordinal)
             container.addView(spinner)
         }
+        val processingSpinner = Spinner(requireContext()).also { spinner ->
+            container.addView(
+                TextView(requireContext()).apply {
+                    text = getString(R.string.image_processing_label)
+                    setPadding(0, dp(16), 0, dp(8))
+                }
+            )
+            setupSpinner(spinner, ImageProcessingMode.entries.map { it.displayName }, block.processingMode.ordinal)
+            container.addView(spinner)
+        }
 
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.text_edit_image)
@@ -486,6 +500,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                         block.copy(
                             alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
                             ditheringMode = DitheringMode.entries[ditheringSpinner.selectedItemPosition],
+                            processingMode = ImageProcessingMode.entries[processingSpinner.selectedItemPosition],
                             width = ImageBlockWidth.entries[widthSpinner.selectedItemPosition]
                         )
                     )
@@ -526,7 +541,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         val newBlock = ImageBlock(
             id = existingBlockId ?: UUID.randomUUID().toString(),
             imageUri = storedImageUri,
-            alignment = BlockAlignment.CENTER
+            alignment = BlockAlignment.CENTER,
+            processingMode = appSettings.selectedImageProcessingMode
         )
 
         val updatedDocument = if (existingBlockId == null) {
@@ -547,6 +563,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 newBlock.copy(
                     alignment = existingImageBlock?.alignment ?: BlockAlignment.CENTER,
                     ditheringMode = existingImageBlock?.ditheringMode ?: DitheringMode.FLOYD_STEINBERG,
+                    processingMode = existingImageBlock?.processingMode ?: appSettings.selectedImageProcessingMode,
                     width = existingImageBlock?.width ?: ImageBlockWidth.FULL
                 )
             )
@@ -572,8 +589,9 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             )
         }.onSuccess { bitmap ->
             val preparedImage = ImagePrintPreparer.prepare(
-                bitmap,
-                host?.selectedTextDithering() ?: appSettings.selectedDitheringMode
+                sourceBitmap = bitmap,
+                ditheringMode = host?.selectedTextDithering() ?: appSettings.selectedDitheringMode,
+                resizerMode = appSettings.selectedImageResizerMode
             )
             host?.printPreparedImage(preparedImage, getString(R.string.text_printing_label))
         }.onFailure { error ->

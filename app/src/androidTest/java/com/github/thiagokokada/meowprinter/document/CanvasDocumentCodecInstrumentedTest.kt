@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.thiagokokada.meowprinter.data.DocumentImageStore
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.image.DitheringMode
+import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -40,6 +41,7 @@ class CanvasDocumentCodecInstrumentedTest {
                     imageUri = "content://example/image.png",
                     alignment = BlockAlignment.LEFT,
                     ditheringMode = DitheringMode.ATKINSON,
+                    processingMode = ImageProcessingMode.SHARPEN,
                     width = ImageBlockWidth.HALF
                 )
             )
@@ -54,6 +56,7 @@ class CanvasDocumentCodecInstrumentedTest {
         assertEquals(CanvasTextSize.SP20, textBlock.textSize)
         val imageBlock = restored.blocks.last() as ImageBlock
         assertEquals(DitheringMode.ATKINSON, imageBlock.ditheringMode)
+        assertEquals(ImageProcessingMode.SHARPEN, imageBlock.processingMode)
         assertEquals(ImageBlockWidth.HALF, imageBlock.width)
     }
 
@@ -70,6 +73,7 @@ class CanvasDocumentCodecInstrumentedTest {
                     imageUri = storedImageUri,
                     alignment = BlockAlignment.CENTER,
                     ditheringMode = DitheringMode.ORDERED_4X4,
+                    processingMode = ImageProcessingMode.HIGH_CONTRAST,
                     width = ImageBlockWidth.THREE_QUARTERS
                 )
             )
@@ -83,6 +87,7 @@ class CanvasDocumentCodecInstrumentedTest {
         assertTrue(exported.contains("\"dataBase64\""))
         assertTrue(restoredBlock.imageUri.startsWith("content://"))
         assertEquals(DitheringMode.ORDERED_4X4, restoredBlock.ditheringMode)
+        assertEquals(ImageProcessingMode.HIGH_CONTRAST, restoredBlock.processingMode)
         assertEquals(ImageBlockWidth.THREE_QUARTERS, restoredBlock.width)
     }
 

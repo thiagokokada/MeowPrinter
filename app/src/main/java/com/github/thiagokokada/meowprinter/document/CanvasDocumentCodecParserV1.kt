@@ -2,6 +2,7 @@ package com.github.thiagokokada.meowprinter.document
 
 import com.github.thiagokokada.meowprinter.data.DocumentImageStore
 import com.github.thiagokokada.meowprinter.image.DitheringMode
+import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Base64
@@ -64,6 +65,7 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
                 .put("imageUri", block.imageUri)
                 .put("alignment", block.alignment.name)
                 .put("ditheringMode", block.ditheringMode.name)
+                .put("processingMode", block.processingMode.name)
                 .put("width", block.width.name)
         }
     }
@@ -78,6 +80,7 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
                     .put("id", block.id)
                     .put("alignment", block.alignment.name)
                     .put("ditheringMode", block.ditheringMode.name)
+                    .put("processingMode", block.processingMode.name)
                     .put("width", block.width.name)
                     .put(
                         "image",
@@ -104,6 +107,7 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
                 imageUri = jsonObject.optString("imageUri"),
                 alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
                 ditheringMode = DitheringMode.fromStoredValue(jsonObject.optString("ditheringMode")),
+                processingMode = ImageProcessingMode.fromStoredValue(jsonObject.optString("processingMode")),
                 width = ImageBlockWidth.fromStoredValue(jsonObject.optString("width"))
             )
 
@@ -134,6 +138,7 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
             imageUri = embeddedImageUri,
             alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
             ditheringMode = DitheringMode.fromStoredValue(jsonObject.optString("ditheringMode")),
+            processingMode = ImageProcessingMode.fromStoredValue(jsonObject.optString("processingMode")),
             width = ImageBlockWidth.fromStoredValue(jsonObject.optString("width"))
         )
     }

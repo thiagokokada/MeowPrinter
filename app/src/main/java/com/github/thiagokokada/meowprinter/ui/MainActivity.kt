@@ -756,10 +756,36 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     private fun handleIntent(intent: Intent?) {
-        if (intent?.action == ACTION_CANCEL_PRINT) {
-            ActivePrintController.cancel()
-            intent.action = null
+        when (intent?.action) {
+            ACTION_CANCEL_PRINT -> {
+                ActivePrintController.cancel()
+                intent.action = null
+            }
+
+            Intent.ACTION_SEND -> {
+                val sharedImageUri = extractSharedImageUri(intent)
+                if (sharedImageUri != null) {
+                    showScreen(R.id.navigation_image)
+                    appendLog("Received shared image.")
+                    launchImageEditor(sharedImageUri)
+                } else {
+                    appendLog("Ignored share intent without an image.")
+                }
+                intent.action = null
+            }
         }
+    }
+
+    private fun extractSharedImageUri(intent: Intent): Uri? {
+        val isImageShare = intent.type?.startsWith("image/") == true
+        if (!isImageShare) {
+            return null
+        }
+        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)?.let { return it }
+        return intent.clipData
+            ?.takeIf { it.itemCount > 0 }
+            ?.getItemAt(0)
+            ?.uri
     }
 
     private fun finishTrackedJob(job: Job) {

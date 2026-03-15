@@ -30,6 +30,7 @@ import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
@@ -872,8 +873,18 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         imageSection.imageSelectionValue.text = selectedImage?.let { prepared ->
             "${prepared.printWidth}x${prepared.printHeight} • ${prepared.resizerMode.displayName} • ${prepared.processingMode.displayName} • ${prepared.ditheringMode.displayName}"
         } ?: getString(R.string.no_image_selected_label)
-        imageSection.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
-        imageSection.imagePreview.isVisible = selectedImage != null
+        val selectedPreview = selectedImage?.previewBitmap
+        imageSection.imagePreview.isVisible = selectedPreview != null
+        if (selectedPreview != null) {
+            imageSection.imagePreview.post {
+                val displayWidth = imageSection.imagePreview.width
+                imageSection.imagePreview.setImageBitmap(
+                    PreviewBitmapScaler.scaleForDisplay(selectedPreview, displayWidth)
+                )
+            }
+        } else {
+            imageSection.imagePreview.setImageBitmap(null)
+        }
         imageSection.buttonPickImage.isEnabled = true
         imageSection.buttonPrintImage.isEnabled = connected && selectedImage != null && !ActivePrintController.isPrintActive && !isBusy
 

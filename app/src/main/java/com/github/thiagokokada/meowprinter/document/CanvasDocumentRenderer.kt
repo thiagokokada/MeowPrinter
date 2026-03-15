@@ -19,6 +19,7 @@ import androidx.core.net.toUri
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.google.android.material.color.MaterialColors
 import io.noties.markwon.Markwon
@@ -159,12 +160,7 @@ class CanvasDocumentRenderer(
                 targetWidth = printWidthPx
             )
             .previewBitmap
-        val displayedBitmap = if (renderedBitmap.width != displayWidthPx) {
-            val displayHeight = (renderedBitmap.height * (displayWidthPx / renderedBitmap.width.toFloat())).toInt().coerceAtLeast(1)
-            renderedBitmap.scale(displayWidthPx, displayHeight, false)
-        } else {
-            renderedBitmap
-        }
+        val displayedBitmap = PreviewBitmapScaler.scaleForDisplay(renderedBitmap, displayWidthPx)
 
         frame.addView(
             ImageView(context).apply {

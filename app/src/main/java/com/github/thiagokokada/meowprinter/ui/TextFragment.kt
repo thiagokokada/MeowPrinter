@@ -26,6 +26,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.data.AppSettings
+import com.github.thiagokokada.meowprinter.data.DocumentImageStore
 import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.FragmentTextBinding
 import com.github.thiagokokada.meowprinter.document.BlockAlignment
@@ -63,6 +64,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private var binding: FragmentTextBinding? = null
     private var host: Host? = null
     private lateinit var appSettings: AppSettings
+    private lateinit var documentImageStore: DocumentImageStore
     private lateinit var documentRenderer: CanvasDocumentRenderer
     private var currentDocument = CanvasDocument.default()
     private var currentSavedDocumentName: String? = null
@@ -127,6 +129,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         super.onAttach(context)
         host = context as? Host
         appSettings = AppSettings(context.applicationContext)
+        documentImageStore = DocumentImageStore(context.applicationContext)
         documentRenderer = CanvasDocumentRenderer(context, context.contentResolver)
     }
 
@@ -516,9 +519,16 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private fun onEditedImageReady(editedUri: Uri) {
         val existingBlockId = pendingImageTargetBlockId
         pendingImageTargetBlockId = null
+        val storedImageUri = runCatching {
+            documentImageStore.persistImageFromUri(editedUri)
+        }.getOrElse { error ->
+            Toast.makeText(requireContext(), R.string.text_image_edit_failed, Toast.LENGTH_SHORT).show()
+            appendLog("Failed to persist edited image: ${error.message ?: getString(R.string.unknown_error)}")
+            return
+        }
         val newBlock = ImageBlock(
             id = existingBlockId ?: UUID.randomUUID().toString(),
-            imageUri = editedUri.toString(),
+            imageUri = storedImageUri,
             alignment = BlockAlignment.CENTER
         )
 
@@ -528,6 +538,13 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             val existingImageBlock = currentDocument.blocks
                 .filterIsInstance<ImageBlock>()
                 .firstOrNull { it.id == existingBlockId }
+            existingImageBlock
+                ?.takeIf { block ->
+                    currentDocument.blocks
+                        .filterIsInstance<ImageBlock>()
+                        .count { it.imageUri == block.imageUri } == 1
+                }
+                ?.let { documentImageStore.deleteManagedImage(it.imageUri) }
             CanvasDocumentEditor.replaceBlock(
                 currentDocument,
                 newBlock.copy(
@@ -584,7 +601,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private fun saveDocumentToUri(uri: Uri) {
         runCatching {
             requireContext().contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use { writer ->
-                writer.write(CanvasDocumentCodec.encode(currentDocument))
+                writer.write(CanvasDocumentCodec.encodeForExport(currentDocument, documentImageStore))
             } ?: error("Unable to open output stream.")
             readDisplayName(uri) ?: suggestedDocumentFileName()
         }.onSuccess { displayName ->
@@ -614,7 +631,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             Triple(displayName, rawDocument, uri)
         }.onSuccess { (displayName, rawDocument, sourceUri) ->
             currentSavedDocumentName = displayName
-            updateDocument(CanvasDocumentCodec.decode(rawDocument))
+            updateDocument(CanvasDocumentCodec.decodeImported(rawDocument, documentImageStore))
             Toast.makeText(
                 requireContext(),
                 getString(R.string.text_load_document_success, displayName),

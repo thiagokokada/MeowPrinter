@@ -3,4 +3,7 @@
     <cache-path
         name="crop_cache"
         path="." />
+    <files-path
+        name="document_images"
+        path="document_images/" />
 </paths>

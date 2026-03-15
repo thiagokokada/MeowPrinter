@@ -14,10 +14,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.google.android.material.color.MaterialColors
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
@@ -129,8 +131,9 @@ class CanvasDocumentRenderer(
         val frame = FrameLayout(context).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
-        val targetWidthPx = (contentWidthPx * block.width.fraction).toInt().coerceAtLeast(1)
-        val bitmap = decodeBitmap(block.imageUri, targetWidthPx, block.resizerMode)
+        val displayWidthPx = (contentWidthPx * block.width.fraction).toInt().coerceAtLeast(1)
+        val printWidthPx = (CatPrinterProtocol.PRINT_WIDTH * block.width.fraction).toInt().coerceAtLeast(1)
+        val bitmap = decodeBitmap(block.imageUri, printWidthPx, block.resizerMode)
         if (bitmap == null) {
             frame.addView(
                 TextView(context).apply {
@@ -153,18 +156,24 @@ class CanvasDocumentRenderer(
                 ditheringMode = block.ditheringMode,
                 processingMode = block.processingMode,
                 resizerMode = block.resizerMode,
-                targetWidth = targetWidthPx
+                targetWidth = printWidthPx
             )
             .previewBitmap
+        val displayedBitmap = if (renderedBitmap.width != displayWidthPx) {
+            val displayHeight = (renderedBitmap.height * (displayWidthPx / renderedBitmap.width.toFloat())).toInt().coerceAtLeast(1)
+            renderedBitmap.scale(displayWidthPx, displayHeight, false)
+        } else {
+            renderedBitmap
+        }
 
         frame.addView(
             ImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
-                    renderedBitmap.width,
-                    renderedBitmap.height,
+                    displayedBitmap.width,
+                    displayedBitmap.height,
                     block.alignment.toLayoutGravity()
                 )
-                setImageBitmap(renderedBitmap)
+                setImageBitmap(displayedBitmap)
                 adjustViewBounds = true
                 scaleType = ImageView.ScaleType.FIT_CENTER
             }

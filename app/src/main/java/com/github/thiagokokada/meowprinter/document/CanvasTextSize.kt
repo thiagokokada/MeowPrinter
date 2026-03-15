@@ -3,6 +3,8 @@ package com.github.thiagokokada.meowprinter.document
 enum class CanvasTextSize(
     val sp: Int
 ) {
+    SP6(6),
+    SP8(8),
     SP10(10),
     SP12(12),
     SP14(14),

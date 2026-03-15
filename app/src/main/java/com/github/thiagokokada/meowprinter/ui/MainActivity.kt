@@ -405,6 +405,12 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     private suspend fun ensureForegroundPrinterReady(printerAddress: String): BlePrinterManager? {
+        if (!hasBlePermissions()) {
+            currentStatus = getString(R.string.bluetooth_permission_missing_idle)
+            render()
+            return null
+        }
+
         val activeManager = printerManager
         val strategy = SavedPrinterConnectionSelector.select(
             activeManagerReady = activeManager?.isPrinterReady == true,

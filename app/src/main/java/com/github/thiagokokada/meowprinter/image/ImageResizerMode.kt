@@ -1,7 +1,7 @@
 package com.github.thiagokokada.meowprinter.image
 
 enum class ImageResizerMode(val displayName: String) {
-    SYSTEM_FILTERED("System filtered"),
+    SYSTEM_FILTERED("Default"),
     AREA_AVERAGE("Area average"),
     NEAREST_NEIGHBOR("Nearest neighbor");
 

@@ -15,7 +15,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.graphics.createBitmap
-import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer

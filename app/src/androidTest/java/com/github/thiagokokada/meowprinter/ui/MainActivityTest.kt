@@ -2,6 +2,7 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.view.View
 import android.widget.TextView
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -40,22 +41,47 @@ class MainActivityTest {
     }
 
     @Test
-    fun openingLogsUpdatesVisibleScreenAndTitle() {
+    fun launchShowsImageScreenByDefault() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
 
         scenario?.onActivity { activity ->
+            assertEquals(
+                View.VISIBLE,
+                activity.findViewById<View>(R.id.image_scroll).visibility
+            )
+            assertEquals(
+                activity.getString(R.string.nav_image),
+                activity.findViewById<TextView>(R.id.screen_title).text.toString()
+            )
+            assertEquals(
+                View.VISIBLE,
+                activity.findViewById<View>(R.id.button_pick_image).visibility
+            )
+        }
+    }
+
+    @Test
+    fun openingLogsUpdatesVisibleScreenAndTitle() {
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val monitor = instrumentation.addMonitor(LogsActivity::class.java.name, null, false)
+
+        try {
+            scenario?.onActivity { activity ->
             activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
                 R.id.navigation_settings
             activity.findViewById<View>(R.id.button_open_logs).performClick()
+            }
 
+            val logsActivity = instrumentation.waitForMonitorWithTimeout(monitor, 5_000)
+            checkNotNull(logsActivity)
             assertEquals(
-                View.VISIBLE,
-                activity.findViewById<View>(R.id.logs_scroll).visibility
+                activityString(logsActivity, R.string.logs_screen_title),
+                logsActivity.findViewById<TextView>(R.id.screen_title).text.toString()
             )
-            assertEquals(
-                activity.getString(R.string.logs_screen_title),
-                activity.findViewById<TextView>(R.id.screen_title).text.toString()
-            )
+            logsActivity.finish()
+        } finally {
+            instrumentation.removeMonitor(monitor)
         }
     }
 
@@ -80,5 +106,9 @@ class MainActivityTest {
                 activity.findViewById<View>(R.id.button_add_text_block).visibility
             )
         }
+    }
+
+    private fun activityString(activity: android.app.Activity, resId: Int): String {
+        return activity.getString(resId)
     }
 }

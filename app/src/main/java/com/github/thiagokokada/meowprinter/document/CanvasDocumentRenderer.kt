@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ImageDecoder
+import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -140,6 +141,7 @@ class CanvasDocumentRenderer(
             } else {
                 block.textSize.previewSp
             }
+            typeface = Typeface.create(block.textFont.toTypeface(), Typeface.NORMAL)
             includeFontPadding = false
             gravity = block.alignment.toGravity()
             if (mode == RenderMode.PRINT) {

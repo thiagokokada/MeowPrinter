@@ -8,9 +8,9 @@ import org.junit.Test
 class CanvasDocumentEditorTest {
     @Test
     fun moveBlockReordersTheRequestedBlock() {
-        val first = TextBlock("1", "First", BlockAlignment.LEFT, CanvasTextSize.SP14)
-        val second = TextBlock("2", "Second", BlockAlignment.LEFT, CanvasTextSize.SP14)
-        val third = TextBlock("3", "Third", BlockAlignment.LEFT, CanvasTextSize.SP14)
+        val first = TextBlock("1", "First", BlockAlignment.LEFT, CanvasTextSize.SP14, CanvasTextFont.SANS_SERIF)
+        val second = TextBlock("2", "Second", BlockAlignment.LEFT, CanvasTextSize.SP14, CanvasTextFont.SANS_SERIF)
+        val third = TextBlock("3", "Third", BlockAlignment.LEFT, CanvasTextSize.SP14, CanvasTextFont.SANS_SERIF)
         val document = CanvasDocument(listOf(first, second, third))
 
         val moved = CanvasDocumentEditor.moveBlock(document, "3", -2)
@@ -20,7 +20,7 @@ class CanvasDocumentEditorTest {
 
     @Test
     fun removeBlockFallsBackToDefaultDocumentWhenLastBlockIsDeleted() {
-        val only = TextBlock("1", "Only", BlockAlignment.LEFT, CanvasTextSize.SP14)
+        val only = TextBlock("1", "Only", BlockAlignment.LEFT, CanvasTextSize.SP14, CanvasTextFont.SANS_SERIF)
         val document = CanvasDocument(listOf(only))
 
         val updated = CanvasDocumentEditor.removeBlock(document, "1")
@@ -31,7 +31,7 @@ class CanvasDocumentEditorTest {
 
     @Test
     fun duplicateBlockClonesContentAndInsertsNextToSource() {
-        val first = TextBlock("1", "First", BlockAlignment.CENTER, CanvasTextSize.SP16)
+        val first = TextBlock("1", "First", BlockAlignment.CENTER, CanvasTextSize.SP16, CanvasTextFont.MONOSPACE)
         val second = ImageBlock(
             "2",
             "content://example/image.png",
@@ -49,6 +49,7 @@ class CanvasDocumentEditorTest {
         assertEquals(first.markdown, duplicated.markdown)
         assertEquals(first.alignment, duplicated.alignment)
         assertEquals(first.textSize, duplicated.textSize)
+        assertEquals(first.textFont, duplicated.textFont)
     }
 
     @Test

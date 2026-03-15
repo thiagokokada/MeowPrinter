@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.thiagokokada.meowprinter.document.BlockAlignment
 import com.github.thiagokokada.meowprinter.document.CanvasDocument
+import com.github.thiagokokada.meowprinter.document.CanvasTextFont
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.document.TextBlock
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
@@ -27,6 +28,12 @@ class AppSettingsInstrumentedTest {
     }
 
     @Test
+    fun defaultsMatchAppExpectations() {
+        assertEquals(100, appSettings.selectedPrintPacingPercent)
+        assertEquals(1, appSettings.selectedEndPaperPasses)
+    }
+
+    @Test
     fun canvasDocumentDraftPersists() {
         val draft = CanvasDocument(
             blocks = listOf(
@@ -34,7 +41,8 @@ class AppSettingsInstrumentedTest {
                     id = "text-1",
                     markdown = "## Hello printer",
                     alignment = BlockAlignment.CENTER,
-                    textSize = CanvasTextSize.SP20
+                    textSize = CanvasTextSize.SP20,
+                    textFont = CanvasTextFont.SERIF
                 )
             )
         )
@@ -47,6 +55,7 @@ class AppSettingsInstrumentedTest {
         assertEquals("## Hello printer", restoredBlock.markdown)
         assertEquals(BlockAlignment.CENTER, restoredBlock.alignment)
         assertEquals(CanvasTextSize.SP20, restoredBlock.textSize)
+        assertEquals(CanvasTextFont.SERIF, restoredBlock.textFont)
     }
 
     @Test

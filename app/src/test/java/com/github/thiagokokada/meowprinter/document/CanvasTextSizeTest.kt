@@ -25,8 +25,8 @@ class CanvasTextSizeTest {
 
     @Test
     fun fromStoredValueFallsBackToNormalWhenUnknown() {
-        assertEquals(CanvasTextSize.SP14, CanvasTextSize.fromStoredValue(null))
-        assertEquals(CanvasTextSize.SP14, CanvasTextSize.fromStoredValue("invalid"))
+        assertEquals(CanvasTextSize.SP12, CanvasTextSize.fromStoredValue(null))
+        assertEquals(CanvasTextSize.SP12, CanvasTextSize.fromStoredValue("invalid"))
     }
 
     @Test

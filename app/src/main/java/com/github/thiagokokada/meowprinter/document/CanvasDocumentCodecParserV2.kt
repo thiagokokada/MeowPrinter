@@ -8,8 +8,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Base64
 
-class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
-    override val version: Int = 1
+class CanvasDocumentCodecParserV2 : CanvasDocumentCodecParser {
+    override val version: Int = 2
 
     override fun encode(document: CanvasDocument): JSONObject {
         return JSONObject()
@@ -59,6 +59,7 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
                 .put("markdown", block.markdown)
                 .put("alignment", block.alignment.name)
                 .put("textSize", block.textSize.name)
+                .put("textFont", block.textFont.name)
 
             is ImageBlock -> JSONObject()
                 .put("type", "image")
@@ -103,7 +104,7 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
                 markdown = jsonObject.optString("markdown"),
                 alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
                 textSize = CanvasTextSize.fromStoredValue(jsonObject.optString("textSize")),
-                textFont = CanvasTextFont.SANS_SERIF
+                textFont = CanvasTextFont.fromStoredValue(jsonObject.optString("textFont"))
             )
 
             "image" -> ImageBlock(

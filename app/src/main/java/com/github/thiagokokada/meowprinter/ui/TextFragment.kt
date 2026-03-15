@@ -31,6 +31,7 @@ import com.github.thiagokokada.meowprinter.document.CanvasDocument
 import com.github.thiagokokada.meowprinter.document.CanvasDocumentCodec
 import com.github.thiagokokada.meowprinter.document.CanvasDocumentEditor
 import com.github.thiagokokada.meowprinter.document.CanvasDocumentRenderer
+import com.github.thiagokokada.meowprinter.document.CanvasTextFont
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.document.DocumentBlock
 import com.github.thiagokokada.meowprinter.document.ImageBlock
@@ -328,17 +329,20 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         val contentInput = dialogView.findViewById<EditText>(R.id.input_text_block_content)
         val alignmentSpinner = dialogView.findViewById<Spinner>(R.id.spinner_text_block_alignment)
         val sizeSpinner = dialogView.findViewById<Spinner>(R.id.spinner_text_block_size)
+        val fontSpinner = dialogView.findViewById<Spinner>(R.id.spinner_text_block_font)
 
         val block = existingBlock ?: TextBlock(
             id = UUID.randomUUID().toString(),
             markdown = "",
             alignment = BlockAlignment.LEFT,
-            textSize = CanvasTextSize.SP14
+            textSize = CanvasTextSize.SP12,
+            textFont = CanvasTextFont.SANS_SERIF
         )
 
         contentInput.setText(block.markdown)
         setupSpinner(alignmentSpinner, BlockAlignment.entries.map { it.displayName }, block.alignment.ordinal)
         setupSpinner(sizeSpinner, CanvasTextSize.entries.map { it.displayName }, block.textSize.ordinal)
+        setupSpinner(fontSpinner, CanvasTextFont.entries.map { it.displayName }, block.textFont.ordinal)
         bindMarkdownHelperButtons(dialogView, contentInput)
 
         AlertDialog.Builder(requireContext())
@@ -349,7 +353,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 val updatedBlock = block.copy(
                     markdown = contentInput.text?.toString().orEmpty(),
                     alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
-                    textSize = CanvasTextSize.entries[sizeSpinner.selectedItemPosition]
+                    textSize = CanvasTextSize.entries[sizeSpinner.selectedItemPosition],
+                    textFont = CanvasTextFont.entries[fontSpinner.selectedItemPosition]
                 )
                 updateDocument(
                     if (existingBlock == null) {

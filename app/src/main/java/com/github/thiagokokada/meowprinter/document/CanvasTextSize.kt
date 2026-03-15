@@ -25,7 +25,7 @@ enum class CanvasTextSize(
 
     companion object {
         fun fromStoredValue(value: String?): CanvasTextSize {
-            return entries.firstOrNull { it.name == value } ?: SP14
+            return entries.firstOrNull { it.name == value } ?: SP12
         }
     }
 }

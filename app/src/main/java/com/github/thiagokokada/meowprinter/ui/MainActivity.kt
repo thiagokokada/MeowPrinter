@@ -28,6 +28,9 @@ import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
+import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
+import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
@@ -45,6 +48,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var scanner: BlePrinterScanner
     private lateinit var appSettings: AppSettings
     private lateinit var ditheringAdapter: ArrayAdapter<String>
+    private lateinit var imageProcessingAdapter: ArrayAdapter<String>
+    private lateinit var imageResizerAdapter: ArrayAdapter<String>
     private lateinit var printerAdapter: ArrayAdapter<String>
 
     private var printerManager: BlePrinterManager? = null
@@ -184,6 +189,50 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             val selectedMode = DitheringMode.entries[position]
             if (appSettings.selectedDitheringMode != selectedMode) {
                 appSettings.selectedDitheringMode = selectedMode
+                val uri = selectedImageUri
+                if (uri != null) {
+                    prepareSelectedImage(uri, appendPreparedLog = false)
+                } else {
+                    currentStatus = getString(R.string.pick_image_for_preview)
+                    render()
+                }
+            }
+        }
+        imageProcessingAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            ImageProcessingMode.entries.map { it.displayName }
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        imageSection.spinnerImageProcessing.adapter = imageProcessingAdapter
+        imageSection.spinnerImageProcessing.setSelection(appSettings.selectedImageProcessingMode.ordinal, false)
+        imageSection.spinnerImageProcessing.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            val selectedMode = ImageProcessingMode.entries[position]
+            if (appSettings.selectedImageProcessingMode != selectedMode) {
+                appSettings.selectedImageProcessingMode = selectedMode
+                val uri = selectedImageUri
+                if (uri != null) {
+                    prepareSelectedImage(uri, appendPreparedLog = false)
+                } else {
+                    currentStatus = getString(R.string.pick_image_for_preview)
+                    render()
+                }
+            }
+        }
+        imageResizerAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            ImageResizerMode.entries.map { it.displayName }
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        imageSection.spinnerImageResizer.adapter = imageResizerAdapter
+        imageSection.spinnerImageResizer.setSelection(appSettings.selectedImageResizerMode.ordinal, false)
+        imageSection.spinnerImageResizer.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            val selectedMode = ImageResizerMode.entries[position]
+            if (appSettings.selectedImageResizerMode != selectedMode) {
+                appSettings.selectedImageResizerMode = selectedMode
                 val uri = selectedImageUri
                 if (uri != null) {
                     prepareSelectedImage(uri, appendPreparedLog = false)
@@ -436,18 +485,24 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     private fun prepareSelectedImage(uri: Uri, appendPreparedLog: Boolean) {
         val ditheringMode = appSettings.selectedDitheringMode
+        val processingMode = appSettings.selectedImageProcessingMode
+        val resizerMode = appSettings.selectedImageResizerMode
         runTrackedJob(getString(R.string.preparing_image)) { launchedJob ->
             try {
-                val prepared = ImagePrintPreparer.prepare(contentResolver, uri, ditheringMode)
+                val prepared = ImagePrintPreparer.prepare(contentResolver, uri, ditheringMode, processingMode, resizerMode)
                 selectedImage = prepared
                 currentStatus = getString(R.string.image_ready_to_print)
                 if (appendPreparedLog) {
                     appendLog(
                         "Prepared image ${prepared.originalWidth}x${prepared.originalHeight} -> " +
-                            "${prepared.printWidth}x${prepared.printHeight} using ${prepared.ditheringMode.displayName}."
+                            "${prepared.printWidth}x${prepared.printHeight} using " +
+                            "${prepared.resizerMode.displayName} + ${prepared.processingMode.displayName} + ${prepared.ditheringMode.displayName}."
                     )
                 } else {
-                    appendLog("Updated preview using ${prepared.ditheringMode.displayName}.")
+                    appendLog(
+                        "Updated preview using " +
+                            "${prepared.resizerMode.displayName} + ${prepared.processingMode.displayName} + ${prepared.ditheringMode.displayName}."
+                    )
                 }
             } catch (e: Exception) {
                 currentStatus = getString(R.string.image_preparation_failed)
@@ -829,10 +884,20 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         imageSection.buttonImageConnection.text = if (connected) getString(R.string.connected) else getString(R.string.refresh)
         imageSection.buttonImageConnection.isEnabled = connected.not() && !isBusy
         imageSection.imageSelectionValue.text = selectedImage?.let { prepared ->
-            "${prepared.printWidth}x${prepared.printHeight} • ${prepared.ditheringMode.displayName}"
+            "${prepared.printWidth}x${prepared.printHeight} • ${prepared.resizerMode.displayName} • ${prepared.processingMode.displayName} • ${prepared.ditheringMode.displayName}"
         } ?: getString(R.string.no_image_selected_label)
-        imageSection.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
-        imageSection.imagePreview.isVisible = selectedImage != null
+        val selectedPreview = selectedImage?.previewBitmap
+        imageSection.imagePreview.isVisible = selectedPreview != null
+        if (selectedPreview != null) {
+            imageSection.imagePreview.post {
+                val displayWidth = imageSection.imagePreview.width
+                imageSection.imagePreview.setImageBitmap(
+                    PreviewBitmapScaler.scaleForDisplay(selectedPreview, displayWidth)
+                )
+            }
+        } else {
+            imageSection.imagePreview.setImageBitmap(null)
+        }
         imageSection.buttonPickImage.isEnabled = true
         imageSection.buttonPrintImage.isEnabled = connected && selectedImage != null && !ActivePrintController.isPrintActive && !isBusy
 

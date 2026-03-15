@@ -18,9 +18,14 @@ import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
+import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
+import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.google.android.material.color.MaterialColors
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
+import kotlin.math.max
+import kotlin.math.min
 
 class CanvasDocumentRenderer(
     private val context: Context,
@@ -127,8 +132,9 @@ class CanvasDocumentRenderer(
         val frame = FrameLayout(context).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
-        val targetWidthPx = (contentWidthPx * block.width.fraction).toInt().coerceAtLeast(1)
-        val bitmap = decodeBitmap(block.imageUri, targetWidthPx)
+        val displayWidthPx = (contentWidthPx * block.width.fraction).toInt().coerceAtLeast(1)
+        val printWidthPx = (CatPrinterProtocol.PRINT_WIDTH * block.width.fraction).toInt().coerceAtLeast(1)
+        val bitmap = decodeBitmap(block.imageUri, printWidthPx, block.resizerMode)
         if (bitmap == null) {
             frame.addView(
                 TextView(context).apply {
@@ -145,24 +151,25 @@ class CanvasDocumentRenderer(
             return frame
         }
 
-        val scaledBitmap = if (bitmap.width > targetWidthPx) {
-            val targetHeight = (bitmap.height * (targetWidthPx / bitmap.width.toFloat())).toInt().coerceAtLeast(1)
-            bitmap.scale(targetWidthPx, targetHeight)
-        } else {
-            bitmap
-        }
         val renderedBitmap = ImagePrintPreparer
-            .prepare(scaledBitmap, block.ditheringMode)
+            .prepare(
+                sourceBitmap = bitmap,
+                ditheringMode = block.ditheringMode,
+                processingMode = block.processingMode,
+                resizerMode = block.resizerMode,
+                targetWidth = printWidthPx
+            )
             .previewBitmap
+        val displayedBitmap = PreviewBitmapScaler.scaleForDisplay(renderedBitmap, displayWidthPx)
 
         frame.addView(
             ImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
-                    renderedBitmap.width,
-                    renderedBitmap.height,
+                    displayedBitmap.width,
+                    displayedBitmap.height,
                     block.alignment.toLayoutGravity()
                 )
-                setImageBitmap(renderedBitmap)
+                setImageBitmap(displayedBitmap)
                 adjustViewBounds = true
                 scaleType = ImageView.ScaleType.FIT_CENTER
             }
@@ -170,14 +177,19 @@ class CanvasDocumentRenderer(
         return frame
     }
 
-    private fun decodeBitmap(imageUri: String, targetWidthPx: Int): Bitmap? {
+    private fun decodeBitmap(imageUri: String, targetWidthPx: Int, resizerMode: ImageResizerMode): Bitmap? {
         return runCatching {
             val source = ImageDecoder.createSource(contentResolver, imageUri.toUri())
             ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
                 val sourceWidth = info.size.width
                 val sourceHeight = info.size.height
-                val targetHeight = (sourceHeight * (targetWidthPx / sourceWidth.toFloat())).toInt().coerceAtLeast(1)
-                decoder.setTargetSize(targetWidthPx, targetHeight)
+                val decodeWidth = if (resizerMode == ImageResizerMode.SYSTEM_FILTERED) {
+                    targetWidthPx
+                } else {
+                    min(sourceWidth, max(targetWidthPx, targetWidthPx * 4))
+                }
+                val decodeHeight = (sourceHeight * (decodeWidth / sourceWidth.toFloat())).toInt().coerceAtLeast(1)
+                decoder.setTargetSize(decodeWidth, decodeHeight)
                 decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
                 decoder.isMutableRequired = false
             }

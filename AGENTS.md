@@ -15,8 +15,11 @@
 - Prefer immutable values and `buildList`/`listOf` over mutable collections unless mutation is required by the API.
 - Treat `.idea/*` changes as user-local unless the task explicitly asks for IDE config updates.
 - Keep BLE behavior conservative. Connection logic should remain compatible with the Nordic Android BLE library already in use.
+- Reuse the foreground `BlePrinterManager` whenever possible. Do not add throwaway temporary BLE connections for saved-printer actions like test page or paper advance/retract.
+- Saved-printer actions that need to recover connection state should reconnect the foreground manager, not create a one-off manager for a single command.
 - Keep the Image / Compose / Settings structure consistent unless the task explicitly changes navigation.
 - Reuse the shared document render path for compose preview and printing instead of adding separate rendering flows.
+- Keep `Print image` / `Print document` button gating strict: they should reflect real foreground connection readiness, not silently reconnect on tap.
 - Prefer the shared Android-Iconics icon packages for UI icons instead of hand-authored vector paths when a suitable icon already exists.
 - The app assumes Android 13+ behavior; do not add pre-Tiramisu compatibility branches unless explicitly requested.
 - Image cropping uses CanHub `CropImageView` hosted inside `ImageCropActivity`, not the deprecated contract/activity wrapper flow.
@@ -30,6 +33,17 @@
   - `CanvasDocumentCodecParserV1` owns the current schema
   - add new versions by introducing a new parser class, not by growing conditionals inside the dispatcher
 - Update the compose document schema version on every schema change, and add a new parser class for each new version.
+- Compose image previews and Image Print previews must use the same rasterization assumptions:
+  - dither at printer-width basis first
+  - then downscale for display using the shared `PreviewBitmapScaler`
+  - avoid separate preview pipelines that can drift visually
+- Image resizers and ditherers are interface-based:
+  - `ImageResizer.kt` defines the resizer interface, implementations, and registry
+  - `ImageDitherer.kt` defines the ditherer interface, implementations, and registry
+  - keep `ImagePrintPreparer` as orchestration, not as the home for algorithm implementations
+- For custom resizers, bounded decode width matters:
+  - do not decode full-resolution camera images just to downscale to printer width
+  - use the resizer’s `decodeWidth(...)` policy so custom resizers still get headroom without huge allocations
 
 ## Verification
 - Unit and build check: `./gradlew :app:assembleDebug :app:testDebugUnitTest`

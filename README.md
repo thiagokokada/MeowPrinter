@@ -1,5 +1,9 @@
 # Meow Printer
 
+<p align="center">
+  <img src="docs/play-store-icon-rounded.svg" alt="Meow Printer icon" width="128" height="128">
+</p>
+
 Android app for BLE thermal printers that use the reverse-engineered Cats / Meow protocol.
 
 ## Features

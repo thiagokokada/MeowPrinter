@@ -7,6 +7,8 @@ import com.github.thiagokokada.meowprinter.document.BlockAlignment
 import com.github.thiagokokada.meowprinter.document.CanvasDocument
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.document.TextBlock
+import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
+import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -54,6 +56,24 @@ class AppSettingsInstrumentedTest {
         val restored = AppSettings(context).selectedPrintPacingPercent
 
         assertEquals(72, restored)
+    }
+
+    @Test
+    fun imageProcessingModePersists() {
+        appSettings.selectedImageProcessingMode = ImageProcessingMode.SHARPEN
+
+        val restored = AppSettings(context).selectedImageProcessingMode
+
+        assertEquals(ImageProcessingMode.SHARPEN, restored)
+    }
+
+    @Test
+    fun imageResizerModePersists() {
+        appSettings.selectedImageResizerMode = ImageResizerMode.AREA_AVERAGE
+
+        val restored = AppSettings(context).selectedImageResizerMode
+
+        assertEquals(ImageResizerMode.AREA_AVERAGE, restored)
     }
 
     @Test

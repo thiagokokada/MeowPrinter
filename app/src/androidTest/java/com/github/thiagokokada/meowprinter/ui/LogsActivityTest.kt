@@ -2,6 +2,7 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.view.View
 import android.widget.TextView
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.thiagokokada.meowprinter.R
@@ -52,10 +53,10 @@ class LogsActivityTest {
         LogStore.append("Connected to GT01.")
         LogStore.append("Prepared image 384x500.")
         scenario = ActivityScenario.launch(LogsActivity::class.java)
+        scenario?.moveToState(Lifecycle.State.RESUMED)
 
         scenario?.onActivity { activity ->
             activity.findViewById<View>(R.id.button_clear_logs).performClick()
-
             assertEquals(
                 activity.getString(R.string.no_logs_yet),
                 activity.findViewById<TextView>(R.id.logs_value).text.toString()

@@ -2,6 +2,7 @@ package com.github.thiagokokada.meowprinter.document
 
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
+import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import java.util.UUID
 
 data class CanvasDocument(
@@ -45,5 +46,6 @@ data class ImageBlock(
     override val alignment: BlockAlignment,
     val ditheringMode: DitheringMode = DitheringMode.FLOYD_STEINBERG,
     val processingMode: ImageProcessingMode = ImageProcessingMode.NORMAL,
+    val resizerMode: ImageResizerMode = ImageResizerMode.SYSTEM_FILTERED,
     val width: ImageBlockWidth = ImageBlockWidth.FULL
 ) : DocumentBlock

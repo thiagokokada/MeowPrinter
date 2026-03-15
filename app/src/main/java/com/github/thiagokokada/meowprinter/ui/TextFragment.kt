@@ -129,9 +129,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         host = context as? Host
         appSettings = AppSettings(context.applicationContext)
         documentImageStore = DocumentImageStore(context.applicationContext)
-        documentRenderer = CanvasDocumentRenderer(context, context.contentResolver) {
-            appSettings.selectedImageResizerMode
-        }
+        documentRenderer = CanvasDocumentRenderer(context, context.contentResolver)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -484,6 +482,16 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             setupSpinner(spinner, ImageProcessingMode.entries.map { it.displayName }, block.processingMode.ordinal)
             container.addView(spinner)
         }
+        val resizerSpinner = Spinner(requireContext()).also { spinner ->
+            container.addView(
+                TextView(requireContext()).apply {
+                    text = getString(R.string.image_resizer_label)
+                    setPadding(0, dp(16), 0, dp(8))
+                }
+            )
+            setupSpinner(spinner, ImageResizerMode.entries.map { it.displayName }, block.resizerMode.ordinal)
+            container.addView(spinner)
+        }
 
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.text_edit_image)
@@ -501,6 +509,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                             alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
                             ditheringMode = DitheringMode.entries[ditheringSpinner.selectedItemPosition],
                             processingMode = ImageProcessingMode.entries[processingSpinner.selectedItemPosition],
+                            resizerMode = ImageResizerMode.entries[resizerSpinner.selectedItemPosition],
                             width = ImageBlockWidth.entries[widthSpinner.selectedItemPosition]
                         )
                     )
@@ -542,7 +551,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             id = existingBlockId ?: UUID.randomUUID().toString(),
             imageUri = storedImageUri,
             alignment = BlockAlignment.CENTER,
-            processingMode = appSettings.selectedImageProcessingMode
+            processingMode = appSettings.selectedImageProcessingMode,
+            resizerMode = appSettings.selectedImageResizerMode
         )
 
         val updatedDocument = if (existingBlockId == null) {
@@ -564,6 +574,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                     alignment = existingImageBlock?.alignment ?: BlockAlignment.CENTER,
                     ditheringMode = existingImageBlock?.ditheringMode ?: DitheringMode.FLOYD_STEINBERG,
                     processingMode = existingImageBlock?.processingMode ?: appSettings.selectedImageProcessingMode,
+                    resizerMode = existingImageBlock?.resizerMode ?: appSettings.selectedImageResizerMode,
                     width = existingImageBlock?.width ?: ImageBlockWidth.FULL
                 )
             )

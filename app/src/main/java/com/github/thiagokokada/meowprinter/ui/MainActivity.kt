@@ -13,7 +13,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
@@ -63,6 +62,9 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private var ignorePaperMoveFieldCallback = false
     private var isAppVisible = false
     private var pendingNotificationPermissionAction: (() -> Unit)? = null
+
+    private val imageSection get() = binding.imageSection
+    private val settingsSection get() = binding.settingsSection
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -165,14 +167,9 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.toolbar.applyTopSystemBarPadding()
         binding.imageContent.applySideAndBottomSystemBarsPadding()
         binding.settingsContent.applySideAndBottomSystemBarsPadding()
-        binding.logsContent.applySideAndBottomSystemBarsPadding()
         binding.bottomNavigation.applySideAndBottomSystemBarsPadding()
         binding.appTitle.text = getString(R.string.app_name)
-        binding.toolbar.setNavigationOnClickListener {
-            if (selectedTabId == SCREEN_LOGS) {
-                showScreen(R.id.navigation_settings)
-            }
-        }
+        binding.toolbar.setNavigationOnClickListener(null)
 
         ditheringAdapter = ArrayAdapter(
             this,
@@ -181,9 +178,9 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         ).also { adapter ->
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
-        binding.spinnerDithering.adapter = ditheringAdapter
-        binding.spinnerDithering.setSelection(appSettings.selectedDitheringMode.ordinal, false)
-        binding.spinnerDithering.onItemSelectedListener = SimpleItemSelectedListener { position ->
+        imageSection.spinnerDithering.adapter = ditheringAdapter
+        imageSection.spinnerDithering.setSelection(appSettings.selectedDitheringMode.ordinal, false)
+        imageSection.spinnerDithering.onItemSelectedListener = SimpleItemSelectedListener { position ->
             val selectedMode = DitheringMode.entries[position]
             if (appSettings.selectedDitheringMode != selectedMode) {
                 appSettings.selectedDitheringMode = selectedMode
@@ -204,29 +201,29 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         ).also { adapter ->
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
-        binding.spinnerPrinters.adapter = printerAdapter
-        binding.spinnerPrinters.onItemSelectedListener = SimpleItemSelectedListener { position ->
+        settingsSection.spinnerPrinters.adapter = printerAdapter
+        settingsSection.spinnerPrinters.onItemSelectedListener = SimpleItemSelectedListener { position ->
             if (ignorePrinterSelectionCallback || position !in discoveredPrinters.indices) {
                 return@SimpleItemSelectedListener
             }
             selectedScannedPrinterIndex = position
             render()
         }
-        binding.sliderEnergy.addOnChangeListener { _, value, fromUser ->
+        settingsSection.sliderEnergy.addOnChangeListener { _, value, fromUser ->
             if (!fromUser || ignoreEnergySliderCallback) {
                 return@addOnChangeListener
             }
             appSettings.selectedPrintEnergy = PrintEnergy.fromPercent(value.toInt())
             render()
         }
-        binding.sliderPrintPacing.addOnChangeListener { _, value, fromUser ->
+        settingsSection.sliderPrintPacing.addOnChangeListener { _, value, fromUser ->
             if (!fromUser || ignorePacingSliderCallback) {
                 return@addOnChangeListener
             }
             appSettings.selectedPrintPacingPercent = value.toInt()
             render()
         }
-        binding.inputPaperMoveSteps.setOnEditorActionListener { _, actionId, _ ->
+        settingsSection.inputPaperMoveSteps.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 commitPaperMoveStepsFromInput()
                 true
@@ -234,50 +231,46 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 false
             }
         }
-        binding.inputPaperMoveSteps.setOnFocusChangeListener { _, hasFocus ->
+        settingsSection.inputPaperMoveSteps.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 commitPaperMoveStepsFromInput()
             }
         }
-        binding.buttonPaperSteps10.setOnClickListener { updatePaperMoveSteps(10) }
-        binding.buttonPaperSteps25.setOnClickListener { updatePaperMoveSteps(25) }
-        binding.buttonPaperSteps50.setOnClickListener { updatePaperMoveSteps(50) }
-        binding.buttonPaperSteps100.setOnClickListener { updatePaperMoveSteps(100) }
-        binding.buttonEndPaperPasses0.setOnClickListener { updateEndPaperPasses(0) }
-        binding.buttonEndPaperPasses1.setOnClickListener { updateEndPaperPasses(1) }
-        binding.buttonEndPaperPasses2.setOnClickListener { updateEndPaperPasses(2) }
-        binding.buttonEndPaperPasses3.setOnClickListener { updateEndPaperPasses(3) }
-        binding.buttonPickImage.setOnClickListener {
+        settingsSection.buttonPaperSteps10.setOnClickListener { updatePaperMoveSteps(10) }
+        settingsSection.buttonPaperSteps25.setOnClickListener { updatePaperMoveSteps(25) }
+        settingsSection.buttonPaperSteps50.setOnClickListener { updatePaperMoveSteps(50) }
+        settingsSection.buttonPaperSteps100.setOnClickListener { updatePaperMoveSteps(100) }
+        settingsSection.buttonEndPaperPasses0.setOnClickListener { updateEndPaperPasses(0) }
+        settingsSection.buttonEndPaperPasses1.setOnClickListener { updateEndPaperPasses(1) }
+        settingsSection.buttonEndPaperPasses2.setOnClickListener { updateEndPaperPasses(2) }
+        settingsSection.buttonEndPaperPasses3.setOnClickListener { updateEndPaperPasses(3) }
+        imageSection.buttonPickImage.setOnClickListener {
             imagePickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
             )
         }
-        binding.buttonImageConnection.setOnClickListener {
+        imageSection.buttonImageConnection.setOnClickListener {
             ensureBlePermissionsThen { maybeAutoConnect(force = true) }
         }
-        binding.buttonPrintImage.setOnClickListener {
+        imageSection.buttonPrintImage.setOnClickListener {
             printSelectedImage()
         }
-        binding.buttonTestPrint.setOnClickListener {
+        settingsSection.buttonTestPrint.setOnClickListener {
             ensureBlePermissionsThen { printTestPageFromCurrentPrinter() }
         }
-        binding.buttonAdvancePaper.setOnClickListener {
+        settingsSection.buttonAdvancePaper.setOnClickListener {
             ensureBlePermissionsThen { movePaper(forward = true) }
         }
-        binding.buttonRetractPaper.setOnClickListener {
+        settingsSection.buttonRetractPaper.setOnClickListener {
             ensureBlePermissionsThen { movePaper(forward = false) }
         }
-        binding.buttonOpenLogs.setOnClickListener {
-            showScreen(SCREEN_LOGS)
+        settingsSection.buttonOpenLogs.setOnClickListener {
+            startActivity(Intent(this, LogsActivity::class.java))
         }
-        binding.buttonClearLogs.setOnClickListener {
-            LogStore.clear()
-            render()
-        }
-        binding.buttonScanPrinters.setOnClickListener {
+        settingsSection.buttonScanPrinters.setOnClickListener {
             ensureBlePermissionsThen { scanPrinters() }
         }
-        binding.buttonSavePrinter.setOnClickListener {
+        settingsSection.buttonSavePrinter.setOnClickListener {
             saveSelectedPrinter()
         }
         bindBottomNavigationIcons()
@@ -285,8 +278,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             showScreen(item.itemId)
             true
         }
-        binding.bottomNavigation.selectedItemId =
-            if (selectedTabId == SCREEN_LOGS) R.id.navigation_settings else selectedTabId
+        binding.bottomNavigation.selectedItemId = selectedTabId
 
         showScreen(selectedTabId)
         handleIntent(intent)
@@ -332,19 +324,12 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.imageScroll.isVisible = tabId == R.id.navigation_image
         binding.textFragmentContainer.isVisible = tabId == R.id.navigation_text
         binding.settingsScroll.isVisible = tabId == R.id.navigation_settings
-        binding.logsScroll.isVisible = tabId == SCREEN_LOGS
         binding.screenTitle.text = when (tabId) {
             R.id.navigation_image -> getString(R.string.nav_image)
             R.id.navigation_text -> getString(R.string.nav_text)
-            SCREEN_LOGS -> getString(R.string.logs_screen_title)
             else -> getString(R.string.nav_settings)
         }
-        val showBack = tabId == SCREEN_LOGS
-        binding.toolbar.navigationIcon = if (showBack) {
-            AppCompatResources.getDrawable(this, androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-        } else {
-            null
-        }
+        binding.toolbar.navigationIcon = null
         render()
     }
 
@@ -800,53 +785,51 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         val savedPrinterAddress = appSettings.selectedPrinterAddress
         val selectedPrinter = selectedScannedPrinterIndex?.takeIf { it in discoveredPrinters.indices }?.let(discoveredPrinters::get)
 
-        binding.printerValue.text = printerName
-        binding.imageStatusValue.text = currentStatus
-        binding.buttonImageConnection.text = if (connected) getString(R.string.connected) else getString(R.string.refresh)
-        binding.buttonImageConnection.isEnabled = connected.not() && !isBusy
-        binding.imageSelectionValue.text = selectedImage?.let { prepared ->
+        imageSection.printerValue.text = printerName
+        imageSection.imageStatusValue.text = currentStatus
+        imageSection.buttonImageConnection.text = if (connected) getString(R.string.connected) else getString(R.string.refresh)
+        imageSection.buttonImageConnection.isEnabled = connected.not() && !isBusy
+        imageSection.imageSelectionValue.text = selectedImage?.let { prepared ->
             "${prepared.printWidth}x${prepared.printHeight} • ${prepared.ditheringMode.displayName}"
         } ?: getString(R.string.no_image_selected_label)
-        binding.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
-        binding.imagePreview.isVisible = selectedImage != null
-        binding.buttonPickImage.isEnabled = true
-        binding.buttonPrintImage.isEnabled = connected && selectedImage != null && !ActivePrintController.isPrintActive && !isBusy
+        imageSection.imagePreview.setImageBitmap(selectedImage?.previewBitmap)
+        imageSection.imagePreview.isVisible = selectedImage != null
+        imageSection.buttonPickImage.isEnabled = true
+        imageSection.buttonPrintImage.isEnabled = connected && selectedImage != null && !ActivePrintController.isPrintActive && !isBusy
 
         val savedPrinterName = appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)
-        binding.savedPrinterValue.text = savedPrinterName
-        binding.savedPrinterStatusValue.text = when {
+        settingsSection.savedPrinterValue.text = savedPrinterName
+        settingsSection.savedPrinterStatusValue.text = when {
             savedPrinterAddress == null -> ""
             connected && connectedPrinterName == appSettings.selectedPrinterName -> currentStatus
             else -> getString(R.string.disconnected)
         }
-        binding.savedPrinterStatusValue.isVisible = savedPrinterAddress != null
-        binding.energyValue.text = formatEnergy(PrintEnergy.toPercent(appSettings.selectedPrintEnergy))
+        settingsSection.savedPrinterStatusValue.isVisible = savedPrinterAddress != null
+        settingsSection.energyValue.text = formatEnergy(PrintEnergy.toPercent(appSettings.selectedPrintEnergy))
         ignoreEnergySliderCallback = true
-        binding.sliderEnergy.value = PrintEnergy.toPercent(appSettings.selectedPrintEnergy).toFloat()
+        settingsSection.sliderEnergy.value = PrintEnergy.toPercent(appSettings.selectedPrintEnergy).toFloat()
         ignoreEnergySliderCallback = false
         val pacingPercent = appSettings.selectedPrintPacingPercent
-        binding.printPacingValue.text = formatPrintPacing(pacingPercent)
+        settingsSection.printPacingValue.text = formatPrintPacing(pacingPercent)
         ignorePacingSliderCallback = true
-        binding.sliderPrintPacing.value = pacingPercent.toFloat()
+        settingsSection.sliderPrintPacing.value = pacingPercent.toFloat()
         ignorePacingSliderCallback = false
         val paperMoveSteps = appSettings.selectedPaperMoveSteps
         val paperMoveStepsText = paperMoveSteps.toString()
-        if (binding.inputPaperMoveSteps.text?.toString() != paperMoveStepsText) {
+        if (settingsSection.inputPaperMoveSteps.text?.toString() != paperMoveStepsText) {
             ignorePaperMoveFieldCallback = true
-            binding.inputPaperMoveSteps.setText(paperMoveStepsText)
-            binding.inputPaperMoveSteps.setSelection(paperMoveStepsText.length)
+            settingsSection.inputPaperMoveSteps.setText(paperMoveStepsText)
+            settingsSection.inputPaperMoveSteps.setSelection(paperMoveStepsText.length)
             ignorePaperMoveFieldCallback = false
         }
-        binding.inputLayoutPaperMoveSteps.error = null
-        binding.endPaperPassesValue.text = getString(R.string.end_paper_passes_value, appSettings.selectedEndPaperPasses)
-        binding.buttonScanPrinters.isEnabled = !isBusy
-        binding.buttonSavePrinter.isEnabled = selectedPrinter != null && !isBusy
-        binding.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
-        binding.buttonAdvancePaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
-        binding.buttonRetractPaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
-        binding.buttonOpenLogs.isEnabled = true
-
-        binding.logsValue.text = LogStore.asText().ifBlank { getString(R.string.no_logs_yet) }
+        settingsSection.inputLayoutPaperMoveSteps.error = null
+        settingsSection.endPaperPassesValue.text = getString(R.string.end_paper_passes_value, appSettings.selectedEndPaperPasses)
+        settingsSection.buttonScanPrinters.isEnabled = !isBusy
+        settingsSection.buttonSavePrinter.isEnabled = selectedPrinter != null && !isBusy
+        settingsSection.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
+        settingsSection.buttonAdvancePaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
+        settingsSection.buttonRetractPaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
+        settingsSection.buttonOpenLogs.isEnabled = true
         renderPrinterChoices()
         (supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment)
             ?.refreshConnectionSummary()
@@ -871,13 +854,13 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         printerAdapter.notifyDataSetChanged()
 
         if (discoveredPrinters.isEmpty()) {
-            binding.spinnerPrinters.setSelection(0, false)
+            settingsSection.spinnerPrinters.setSelection(0, false)
         } else {
             val index = selectedScannedPrinterIndex?.takeIf { it in discoveredPrinters.indices }
                 ?: discoveredPrinters.indexOfFirst { it.device.address == appSettings.selectedPrinterAddress }
                     .takeIf { it >= 0 }
                 ?: 0
-            binding.spinnerPrinters.setSelection(index, false)
+            settingsSection.spinnerPrinters.setSelection(index, false)
         }
         ignorePrinterSelectionCallback = false
     }
@@ -912,13 +895,13 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         if (ignorePaperMoveFieldCallback) {
             return
         }
-        val rawValue = binding.inputPaperMoveSteps.text?.toString()?.trim().orEmpty()
+        val rawValue = settingsSection.inputPaperMoveSteps.text?.toString()?.trim().orEmpty()
         val parsed = rawValue.toIntOrNull()
         if (parsed == null) {
-            binding.inputLayoutPaperMoveSteps.error = getString(R.string.paper_move_steps_invalid)
+            settingsSection.inputLayoutPaperMoveSteps.error = getString(R.string.paper_move_steps_invalid)
             return
         }
-        binding.inputLayoutPaperMoveSteps.error = null
+        settingsSection.inputLayoutPaperMoveSteps.error = null
         updatePaperMoveSteps(parsed)
     }
 
@@ -1054,6 +1037,5 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     companion object {
         const val ACTION_CANCEL_PRINT = "com.github.thiagokokada.meowprinter.action.CANCEL_PRINT"
         private const val KEY_SELECTED_TAB = "selected_tab"
-        private const val SCREEN_LOGS = -1
     }
 }

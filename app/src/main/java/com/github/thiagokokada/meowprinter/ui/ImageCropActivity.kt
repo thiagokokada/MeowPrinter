@@ -2,12 +2,18 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.canhub.cropper.CropImageView
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.databinding.ActivityImageCropBinding
@@ -32,11 +38,12 @@ class ImageCropActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         binding = ActivityImageCropBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         binding.toolbar.applyTopSystemBarPadding()
-        binding.cropImageView.applySideAndBottomSystemBarsPadding()
+        binding.cropContainer.applyCropSafeAreaPadding()
 
         sourceUri = intent.getParcelableExtra(EXTRA_SOURCE_URI, Uri::class.java)
             ?: return finishWithError(getString(R.string.image_crop_source_missing))
@@ -50,7 +57,20 @@ class ImageCropActivity : AppCompatActivity() {
         bindToolbarActions()
 
         binding.cropImageView.guidelines = CropImageView.Guidelines.ON_TOUCH
+        binding.cropImageView.scaleType = CropImageView.ScaleType.FIT_CENTER
         binding.cropImageView.setFixedAspectRatio(false)
+        binding.cropImageView.setCenterMoveEnabled(false)
+        binding.cropImageView.setOnSetImageUriCompleteListener { view, _, error ->
+            if (error != null) {
+                finishWithError(error.message ?: getString(R.string.image_crop_failed))
+                return@setOnSetImageUriCompleteListener
+            }
+            view.wholeImageRect
+                ?.takeIf { !it.isEmpty }
+                ?.let { wholeImageRect ->
+                    view.cropRect = Rect(wholeImageRect)
+                }
+        }
         binding.cropImageView.setOnCropImageCompleteListener { _, result ->
             binding.toolbar.menu.setGroupEnabled(0, true)
             if (!result.isSuccessful) {
@@ -132,5 +152,25 @@ class ImageCropActivity : AppCompatActivity() {
 
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private fun android.view.View.applyCropSafeAreaPadding() {
+        val initialPadding = Insets.of(paddingLeft, paddingTop, paddingRight, paddingBottom)
+        val safeAreaMask = (
+            WindowInsetsCompat.Type.systemBars()
+                or WindowInsetsCompat.Type.displayCutout()
+                or WindowInsetsCompat.Type.systemGestures()
+            )
+        ViewCompat.setOnApplyWindowInsetsListener(this) { view, windowInsets ->
+            val insets = windowInsets.getInsets(safeAreaMask)
+            view.updatePadding(
+                left = initialPadding.left + insets.left,
+                top = initialPadding.top,
+                right = initialPadding.right + insets.right,
+                bottom = initialPadding.bottom + insets.bottom
+            )
+            windowInsets
+        }
+        ViewCompat.requestApplyInsets(this)
     }
 }

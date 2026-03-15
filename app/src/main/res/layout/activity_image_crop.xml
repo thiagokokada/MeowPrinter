@@ -13,11 +13,18 @@
         android:background="?attr/colorSurface"
         android:title="@string/image_crop_title"
         android:titleTextColor="?attr/colorOnSurface"
-        app:navigationIcon="@drawable/ic_arrow_back_24" />
+        app:navigationIcon="@drawable/ic_arrow_back_24"
+        app:navigationIconTint="?attr/colorOnSurface" />
 
-    <com.canhub.cropper.CropImageView
-        android:id="@+id/crop_image_view"
+    <FrameLayout
+        android:id="@+id/crop_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1">
+
+        <com.canhub.cropper.CropImageView
+            android:id="@+id/crop_image_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
 </LinearLayout>

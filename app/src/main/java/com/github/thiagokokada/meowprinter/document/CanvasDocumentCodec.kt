@@ -5,8 +5,7 @@ import org.json.JSONObject
 
 object CanvasDocumentCodec {
     private val parsers: Map<Int, CanvasDocumentCodecParser> = listOf(
-        CanvasDocumentCodecParserV1(),
-        CanvasDocumentCodecParserV2()
+        CanvasDocumentCodecParserV1()
     ).associateBy(CanvasDocumentCodecParser::version)
 
     private val currentParser: CanvasDocumentCodecParser = requireNotNull(parsers[CURRENT_VERSION]) {
@@ -53,5 +52,5 @@ object CanvasDocumentCodec {
         }
     }
 
-    private const val CURRENT_VERSION = 2
+    private const val CURRENT_VERSION = 1
 }

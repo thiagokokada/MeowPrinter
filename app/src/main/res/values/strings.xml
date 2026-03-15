@@ -127,6 +127,8 @@
     <string name="print_image">Print image</string>
     <string name="image_selection_label">Prepared image</string>
     <string name="image_preview">Prepared image preview</string>
+    <string name="image_full_preview">Full prepared image preview</string>
+    <string name="preview_image">Preview image</string>
     <string name="preparing_image">Preparing image...</string>
     <string name="image_ready_to_print">Image ready to print.</string>
     <string name="image_preparation_failed">Image preparation failed.</string>

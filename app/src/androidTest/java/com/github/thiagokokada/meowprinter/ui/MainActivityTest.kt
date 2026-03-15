@@ -1,5 +1,6 @@
 package com.github.thiagokokada.meowprinter.ui
 
+import android.graphics.Bitmap
 import android.view.View
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
@@ -7,6 +8,10 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.github.thiagokokada.meowprinter.R
+import com.github.thiagokokada.meowprinter.image.DitheringMode
+import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
+import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import org.junit.Assert.assertEquals
 import org.junit.After
 import org.junit.Test
@@ -119,6 +124,29 @@ class MainActivityTest {
 
             val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
             assertEquals(true, fragment.isPreviewDialogShowingForTest())
+        }
+    }
+
+    @Test
+    fun previewImageShowsImagePreviewDialog() {
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+
+        scenario?.onActivity { activity ->
+            activity.setSelectedImageForTest(
+                PreparedPrintImage(
+                    previewBitmap = Bitmap.createBitmap(32, 24, Bitmap.Config.ARGB_8888),
+                    rows = List(24) { BooleanArray(32) },
+                    originalWidth = 32,
+                    originalHeight = 24,
+                    printWidth = 32,
+                    printHeight = 24,
+                    ditheringMode = DitheringMode.FLOYD_STEINBERG,
+                    processingMode = ImageProcessingMode.NORMAL,
+                    resizerMode = ImageResizerMode.SYSTEM_FILTERED
+                )
+            )
+            activity.findViewById<View>(R.id.button_preview_image).performClick()
+            assertEquals(true, activity.isImagePreviewDialogShowingForTest())
         }
     }
 

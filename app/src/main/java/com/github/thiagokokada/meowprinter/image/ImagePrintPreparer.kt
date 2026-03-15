@@ -7,10 +7,6 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import kotlin.math.max
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.scale
-import kotlin.math.ceil
-import kotlin.math.floor
 
 data class PreparedPrintImage(
     val previewBitmap: Bitmap,
@@ -35,21 +31,19 @@ object ImagePrintPreparer {
     ): PreparedPrintImage {
         var originalWidth = 0
         var originalHeight = 0
+        val resizer = ImageBitmapResizers.forMode(resizerMode)
+        val ditherer = ImageDitherers.forMode(ditheringMode)
         val source = ImageDecoder.createSource(contentResolver, uri)
         val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
             originalWidth = info.size.width
             originalHeight = info.size.height
-            val decodeWidth = decodeWidth(
-                originalWidth = originalWidth,
-                targetWidth = targetWidth,
-                resizerMode = resizerMode
-            )
+            val decodeWidth = resizer.decodeWidth(originalWidth, targetWidth)
             val decodeHeight = max(1, originalHeight * decodeWidth / originalWidth)
             decoder.setTargetSize(decodeWidth, decodeHeight)
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             decoder.isMutableRequired = false
         }
-        val scaledBitmap = scaleBitmap(bitmap, targetWidth, resizerMode)
+        val scaledBitmap = resizer.resize(bitmap, targetWidth)
 
         val grayscale = preprocessGrayscale(
             grayscale = extractGrayscale(scaledBitmap),
@@ -57,13 +51,8 @@ object ImagePrintPreparer {
             height = scaledBitmap.height,
             processingMode = processingMode
         )
-        val rows = when (ditheringMode) {
-            DitheringMode.THRESHOLD -> thresholdRows(grayscale, scaledBitmap.width, scaledBitmap.height)
-            DitheringMode.FLOYD_STEINBERG -> floydSteinbergRows(grayscale, scaledBitmap.width, scaledBitmap.height)
-            DitheringMode.ATKINSON -> atkinsonRows(grayscale, scaledBitmap.width, scaledBitmap.height)
-            DitheringMode.ORDERED_4X4 -> orderedRows(grayscale, scaledBitmap.width, scaledBitmap.height)
-        }
-        val previewBitmap = previewBitmap(rows, scaledBitmap.width, scaledBitmap.height)
+        val rows = ditherer.rowsFor(grayscale, scaledBitmap.width, scaledBitmap.height)
+        val previewBitmap = ImageDitherers.previewBitmap(rows, scaledBitmap.width, scaledBitmap.height)
 
         return PreparedPrintImage(
             previewBitmap = previewBitmap,
@@ -85,20 +74,17 @@ object ImagePrintPreparer {
         resizerMode: ImageResizerMode = ImageResizerMode.SYSTEM_FILTERED,
         targetWidth: Int = CatPrinterProtocol.PRINT_WIDTH
     ): PreparedPrintImage {
-        val bitmap = scaleBitmap(sourceBitmap, targetWidth, resizerMode)
+        val resizer = ImageBitmapResizers.forMode(resizerMode)
+        val ditherer = ImageDitherers.forMode(ditheringMode)
+        val bitmap = resizer.resize(sourceBitmap, targetWidth)
         val grayscale = preprocessGrayscale(
             grayscale = extractGrayscale(bitmap),
             width = bitmap.width,
             height = bitmap.height,
             processingMode = processingMode
         )
-        val rows = when (ditheringMode) {
-            DitheringMode.THRESHOLD -> thresholdRows(grayscale, bitmap.width, bitmap.height)
-            DitheringMode.FLOYD_STEINBERG -> floydSteinbergRows(grayscale, bitmap.width, bitmap.height)
-            DitheringMode.ATKINSON -> atkinsonRows(grayscale, bitmap.width, bitmap.height)
-            DitheringMode.ORDERED_4X4 -> orderedRows(grayscale, bitmap.width, bitmap.height)
-        }
-        val previewBitmap = previewBitmap(rows, bitmap.width, bitmap.height)
+        val rows = ditherer.rowsFor(grayscale, bitmap.width, bitmap.height)
+        val previewBitmap = ImageDitherers.previewBitmap(rows, bitmap.width, bitmap.height)
 
         return PreparedPrintImage(
             previewBitmap = previewBitmap,
@@ -111,100 +97,6 @@ object ImagePrintPreparer {
             processingMode = processingMode,
             resizerMode = resizerMode
         )
-    }
-
-    private fun decodeWidth(
-        originalWidth: Int,
-        targetWidth: Int,
-        resizerMode: ImageResizerMode
-    ): Int {
-        return when (resizerMode) {
-            ImageResizerMode.SYSTEM_FILTERED -> targetWidth
-            ImageResizerMode.NEAREST_NEIGHBOR,
-            ImageResizerMode.AREA_AVERAGE -> minOf(originalWidth, max(targetWidth, targetWidth * 4))
-        }
-    }
-
-    private fun scaleBitmap(
-        bitmap: Bitmap,
-        targetWidth: Int,
-        resizerMode: ImageResizerMode
-    ): Bitmap {
-        if (bitmap.width == targetWidth) {
-            return bitmap
-        }
-
-        val targetHeight = max(1, bitmap.height * targetWidth / bitmap.width)
-        return when (resizerMode) {
-            ImageResizerMode.SYSTEM_FILTERED -> bitmap.scale(targetWidth, targetHeight)
-            ImageResizerMode.NEAREST_NEIGHBOR -> scaleNearestNeighbor(bitmap, targetWidth, targetHeight)
-            ImageResizerMode.AREA_AVERAGE -> scaleAreaAverage(bitmap, targetWidth, targetHeight)
-        }
-    }
-
-    private fun scaleNearestNeighbor(bitmap: Bitmap, targetWidth: Int, targetHeight: Int): Bitmap {
-        val sourcePixels = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(sourcePixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        val scaledPixels = IntArray(targetWidth * targetHeight)
-
-        for (y in 0 until targetHeight) {
-            val sourceY = ((y + 0.5f) * bitmap.height / targetHeight).toInt().coerceIn(0, bitmap.height - 1)
-            for (x in 0 until targetWidth) {
-                val sourceX = ((x + 0.5f) * bitmap.width / targetWidth).toInt().coerceIn(0, bitmap.width - 1)
-                scaledPixels[(y * targetWidth) + x] = sourcePixels[(sourceY * bitmap.width) + sourceX]
-            }
-        }
-
-        return createBitmap(targetWidth, targetHeight).apply {
-            setPixels(scaledPixels, 0, targetWidth, 0, 0, targetWidth, targetHeight)
-        }
-    }
-
-    private fun scaleAreaAverage(bitmap: Bitmap, targetWidth: Int, targetHeight: Int): Bitmap {
-        if (targetWidth >= bitmap.width || targetHeight >= bitmap.height) {
-            return scaleNearestNeighbor(bitmap, targetWidth, targetHeight)
-        }
-
-        val sourcePixels = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(sourcePixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        val scaledPixels = IntArray(targetWidth * targetHeight)
-
-        for (y in 0 until targetHeight) {
-            val sourceYStart = floor(y * bitmap.height / targetHeight.toFloat()).toInt().coerceIn(0, bitmap.height - 1)
-            val sourceYEnd = ceil((y + 1) * bitmap.height / targetHeight.toFloat()).toInt().coerceIn(sourceYStart + 1, bitmap.height)
-            for (x in 0 until targetWidth) {
-                val sourceXStart = floor(x * bitmap.width / targetWidth.toFloat()).toInt().coerceIn(0, bitmap.width - 1)
-                val sourceXEnd = ceil((x + 1) * bitmap.width / targetWidth.toFloat()).toInt().coerceIn(sourceXStart + 1, bitmap.width)
-
-                var alpha = 0L
-                var red = 0L
-                var green = 0L
-                var blue = 0L
-                var count = 0
-
-                for (sourceY in sourceYStart until sourceYEnd) {
-                    for (sourceX in sourceXStart until sourceXEnd) {
-                        val pixel = sourcePixels[(sourceY * bitmap.width) + sourceX]
-                        alpha += Color.alpha(pixel).toLong()
-                        red += Color.red(pixel).toLong()
-                        green += Color.green(pixel).toLong()
-                        blue += Color.blue(pixel).toLong()
-                        count++
-                    }
-                }
-
-                scaledPixels[(y * targetWidth) + x] = Color.argb(
-                    (alpha / count).toInt(),
-                    (red / count).toInt(),
-                    (green / count).toInt(),
-                    (blue / count).toInt()
-                )
-            }
-        }
-
-        return createBitmap(targetWidth, targetHeight).apply {
-            setPixels(scaledPixels, 0, targetWidth, 0, 0, targetWidth, targetHeight)
-        }
     }
 
     private fun extractGrayscale(bitmap: Bitmap): FloatArray {
@@ -302,100 +194,4 @@ object ImagePrintPreparer {
         return output
     }
 
-    private fun thresholdRows(grayscale: FloatArray, width: Int, height: Int): List<BooleanArray> {
-        val threshold = grayscale.average().toFloat()
-        return buildRows(width, height) { x, y ->
-            grayscale[(y * width) + x] < threshold
-        }
-    }
-
-    private fun floydSteinbergRows(grayscale: FloatArray, width: Int, height: Int): List<BooleanArray> {
-        val working = grayscale.copyOf()
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val index = (y * width) + x
-                val oldValue = working[index]
-                val newValue = if (oldValue > 127f) 255f else 0f
-                val error = oldValue - newValue
-                working[index] = newValue
-                distribute(working, width, height, x + 1, y, error * 7f / 16f)
-                distribute(working, width, height, x - 1, y + 1, error * 3f / 16f)
-                distribute(working, width, height, x, y + 1, error * 5f / 16f)
-                distribute(working, width, height, x + 1, y + 1, error * 1f / 16f)
-            }
-        }
-        return buildRows(width, height) { x, y -> working[(y * width) + x] < 127f }
-    }
-
-    private fun atkinsonRows(grayscale: FloatArray, width: Int, height: Int): List<BooleanArray> {
-        val working = grayscale.copyOf()
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val index = (y * width) + x
-                val oldValue = working[index]
-                val newValue = if (oldValue > 127f) 255f else 0f
-                val error = (oldValue - newValue) / 8f
-                working[index] = newValue
-                distribute(working, width, height, x + 1, y, error)
-                distribute(working, width, height, x + 2, y, error)
-                distribute(working, width, height, x - 1, y + 1, error)
-                distribute(working, width, height, x, y + 1, error)
-                distribute(working, width, height, x + 1, y + 1, error)
-                distribute(working, width, height, x, y + 2, error)
-            }
-        }
-        return buildRows(width, height) { x, y -> working[(y * width) + x] < 127f }
-    }
-
-    private fun orderedRows(grayscale: FloatArray, width: Int, height: Int): List<BooleanArray> {
-        val matrix = arrayOf(
-            intArrayOf(0, 8, 2, 10),
-            intArrayOf(12, 4, 14, 6),
-            intArrayOf(3, 11, 1, 9),
-            intArrayOf(15, 7, 13, 5)
-        )
-        return buildRows(width, height) { x, y ->
-            val threshold = ((matrix[y % 4][x % 4] + 0.5f) / 16f) * 255f
-            grayscale[(y * width) + x] < threshold
-        }
-    }
-
-    private fun previewBitmap(rows: List<BooleanArray>, width: Int, height: Int): Bitmap {
-        val preview = createBitmap(width, height)
-        val pixels = IntArray(width)
-        rows.forEachIndexed { y, row ->
-            for (x in 0 until width) {
-                pixels[x] = if (row[x]) Color.BLACK else Color.WHITE
-            }
-            preview.setPixels(pixels, 0, width, 0, y, width, 1)
-        }
-        return preview
-    }
-
-    private fun buildRows(
-        width: Int,
-        height: Int,
-        producer: (x: Int, y: Int) -> Boolean
-    ): List<BooleanArray> {
-        return buildList(height) {
-            for (y in 0 until height) {
-                add(BooleanArray(width) { x -> producer(x, y) })
-            }
-        }
-    }
-
-    private fun distribute(
-        grayscale: FloatArray,
-        width: Int,
-        height: Int,
-        x: Int,
-        y: Int,
-        delta: Float
-    ) {
-        if (x !in 0 until width || y !in 0 until height) {
-            return
-        }
-        val index = (y * width) + x
-        grayscale[index] = (grayscale[index] + delta).coerceIn(0f, 255f)
-    }
 }

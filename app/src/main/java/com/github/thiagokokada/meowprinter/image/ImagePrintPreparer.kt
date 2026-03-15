@@ -39,10 +39,13 @@ object ImagePrintPreparer {
         val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
             originalWidth = info.size.width
             originalHeight = info.size.height
-            if (resizerMode == ImageResizerMode.SYSTEM_FILTERED) {
-                val targetHeight = max(1, originalHeight * targetWidth / originalWidth)
-                decoder.setTargetSize(targetWidth, targetHeight)
-            }
+            val decodeWidth = decodeWidth(
+                originalWidth = originalWidth,
+                targetWidth = targetWidth,
+                resizerMode = resizerMode
+            )
+            val decodeHeight = max(1, originalHeight * decodeWidth / originalWidth)
+            decoder.setTargetSize(decodeWidth, decodeHeight)
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             decoder.isMutableRequired = false
         }
@@ -108,6 +111,18 @@ object ImagePrintPreparer {
             processingMode = processingMode,
             resizerMode = resizerMode
         )
+    }
+
+    private fun decodeWidth(
+        originalWidth: Int,
+        targetWidth: Int,
+        resizerMode: ImageResizerMode
+    ): Int {
+        return when (resizerMode) {
+            ImageResizerMode.SYSTEM_FILTERED -> targetWidth
+            ImageResizerMode.NEAREST_NEIGHBOR,
+            ImageResizerMode.AREA_AVERAGE -> minOf(originalWidth, max(targetWidth, targetWidth * 4))
+        }
     }
 
     private fun scaleBitmap(

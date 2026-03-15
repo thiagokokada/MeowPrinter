@@ -2,6 +2,7 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
@@ -36,7 +37,7 @@ class ImageCropActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.toolbar.applyTopSystemBarPadding()
-        binding.cropImageView.applySideAndBottomSystemBarsPadding()
+        binding.cropContainer.applySideAndBottomSystemBarsPadding()
 
         sourceUri = intent.getParcelableExtra(EXTRA_SOURCE_URI, Uri::class.java)
             ?: return finishWithError(getString(R.string.image_crop_source_missing))
@@ -50,7 +51,20 @@ class ImageCropActivity : AppCompatActivity() {
         bindToolbarActions()
 
         binding.cropImageView.guidelines = CropImageView.Guidelines.ON_TOUCH
+        binding.cropImageView.scaleType = CropImageView.ScaleType.FIT_CENTER
         binding.cropImageView.setFixedAspectRatio(false)
+        binding.cropImageView.setCenterMoveEnabled(false)
+        binding.cropImageView.setOnSetImageUriCompleteListener { view, _, error ->
+            if (error != null) {
+                finishWithError(error.message ?: getString(R.string.image_crop_failed))
+                return@setOnSetImageUriCompleteListener
+            }
+            view.wholeImageRect
+                ?.takeIf { !it.isEmpty }
+                ?.let { wholeImageRect ->
+                    view.cropRect = Rect(wholeImageRect)
+                }
+        }
         binding.cropImageView.setOnCropImageCompleteListener { _, result ->
             binding.toolbar.menu.setGroupEnabled(0, true)
             if (!result.isSuccessful) {

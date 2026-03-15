@@ -404,6 +404,25 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         scanAndConnect()
     }
 
+    private suspend fun ensureForegroundPrinterReady(printerAddress: String): BlePrinterManager? {
+        val activeManager = printerManager
+        if (activeManager?.isPrinterReady == true && appSettings.selectedPrinterAddress == printerAddress) {
+            return activeManager
+        }
+
+        val printer = scanner.findFirstCompatiblePrinter(preferredAddress = printerAddress)
+        if (printer == null) {
+            currentStatus = getString(R.string.saved_printer_not_found)
+            appendLog("Saved printer was not found nearby.")
+            render()
+            return null
+        }
+
+        appendLog("Found ${printer.displayName} (${printer.device.address}). Connecting...")
+        connectToPrinter(printer)
+        return printerManager?.takeIf { it.isPrinterReady }
+    }
+
     private fun prepareSelectedImage(uri: Uri, appendPreparedLog: Boolean) {
         val ditheringMode = appSettings.selectedDitheringMode
         runTrackedJob(getString(R.string.preparing_image)) { launchedJob ->
@@ -667,25 +686,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         printerAddress: String,
         action: suspend (printerName: String, manager: BlePrinterManager) -> Unit
     ) {
-        val activeManager = printerManager
-        if (activeManager?.isPrinterReady == true && appSettings.selectedPrinterAddress == printerAddress) {
-            action(connectedPrinterName ?: appSettings.selectedPrinterName ?: printerAddress, activeManager)
-            return
-        }
-
-        val printer = scanner.findFirstCompatiblePrinter(preferredAddress = printerAddress)
-        if (printer == null) {
-            currentStatus = getString(R.string.saved_printer_not_found)
-            return
-        }
-
-        val temporaryManager = BlePrinterManager(applicationContext) {}
-        try {
-            temporaryManager.connectAndInitialize(printer.device)
-            action(printer.displayName, temporaryManager)
-        } finally {
-            temporaryManager.release()
-        }
+        val manager = ensureForegroundPrinterReady(printerAddress) ?: return
+        action(connectedPrinterName ?: appSettings.selectedPrinterName ?: printerAddress, manager)
     }
 
     private fun scanPrinters() {

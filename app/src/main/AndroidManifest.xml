@@ -21,10 +21,19 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MeowPrinter">
-        <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths" />
+        </provider>
+        <activity
+            android:name=".ui.ImageCropActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MeowPrinter" />
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"

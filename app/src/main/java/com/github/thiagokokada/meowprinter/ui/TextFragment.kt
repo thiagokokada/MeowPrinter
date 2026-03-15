@@ -2,8 +2,7 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -16,15 +15,15 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import android.content.res.ColorStateList
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageButton
-import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.data.AppSettings
+import com.github.thiagokokada.meowprinter.data.DocumentImageStore
 import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.FragmentTextBinding
 import com.github.thiagokokada.meowprinter.document.BlockAlignment
@@ -46,16 +45,14 @@ import com.google.android.material.color.MaterialColors
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.IIcon
 import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
-import com.yalantis.ucrop.UCrop
-import com.yalantis.ucrop.UCropActivity
+import org.json.JSONObject
 import java.io.File
 import java.util.UUID
-import org.json.JSONObject
 
 class TextFragment : Fragment(R.layout.fragment_text) {
     interface Host {
         fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String)
-        fun selectedTextDithering(): com.github.thiagokokada.meowprinter.image.DitheringMode
+        fun selectedTextDithering(): DitheringMode
         fun connectionSummary(): ConnectionSummary
         fun refreshPrinterConnection()
         fun isPrintInProgress(): Boolean
@@ -64,6 +61,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private var binding: FragmentTextBinding? = null
     private var host: Host? = null
     private lateinit var appSettings: AppSettings
+    private lateinit var documentImageStore: DocumentImageStore
     private lateinit var documentRenderer: CanvasDocumentRenderer
     private var currentDocument = CanvasDocument.default()
     private var currentSavedDocumentName: String? = null
@@ -84,7 +82,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     ) { result ->
         when (result.resultCode) {
             android.app.Activity.RESULT_OK -> {
-                val editedUri = result.data?.let(UCrop::getOutput)
+                val editedUri = result.data?.data
                 if (editedUri == null) {
                     Toast.makeText(requireContext(), R.string.text_image_edit_failed, Toast.LENGTH_SHORT).show()
                     appendLog("Text editor image flow finished without an output URI.")
@@ -98,9 +96,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             }
 
             else -> {
-                val error = result.data?.let(UCrop::getError)
                 Toast.makeText(requireContext(), R.string.text_image_edit_failed, Toast.LENGTH_SHORT).show()
-                appendLog("Text editor image flow failed: ${error?.message ?: getString(R.string.unknown_error)}")
+                appendLog("Text editor image flow failed.")
             }
         }
     }
@@ -129,6 +126,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         super.onAttach(context)
         host = context as? Host
         appSettings = AppSettings(context.applicationContext)
+        documentImageStore = DocumentImageStore(context.applicationContext)
         documentRenderer = CanvasDocumentRenderer(context, context.contentResolver)
     }
 
@@ -503,40 +501,31 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     private fun launchImageEditor(sourceUri: Uri) {
-        val destinationUri = Uri.fromFile(
-            File(requireContext().cacheDir, "document-image-${System.currentTimeMillis()}.png")
+        val destinationFile = File(
+            requireContext().cacheDir,
+            "document-image-${System.currentTimeMillis()}.jpg"
         )
-        val options = UCrop.Options().apply {
-            setCompressionFormat(Bitmap.CompressFormat.PNG)
-            setCompressionQuality(100)
-            setHideBottomControls(false)
-            setFreeStyleCropEnabled(true)
-            setToolbarColor(ContextCompat.getColor(requireContext(), R.color.meow_surface))
-            setToolbarWidgetColor(ContextCompat.getColor(requireContext(), R.color.meow_on_surface))
-            setActiveControlsWidgetColor(ContextCompat.getColor(requireContext(), R.color.meow_secondary))
-            setRootViewBackgroundColor(ContextCompat.getColor(requireContext(), R.color.meow_background))
-            setDimmedLayerColor(ContextCompat.getColor(requireContext(), R.color.meow_primary_container))
-            setCropGridColor(ContextCompat.getColor(requireContext(), R.color.meow_outline))
-            setCropFrameColor(ContextCompat.getColor(requireContext(), R.color.meow_secondary))
-        }
-        val intent = UCrop.of(sourceUri, destinationUri)
-            .withOptions(options)
-            .getIntent(requireContext())
-            .apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                setClass(requireContext(), UCropActivity::class.java)
-            }
-
-        imageEditorLauncher.launch(intent)
+        val destinationUri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.fileprovider",
+            destinationFile
+        )
+        imageEditorLauncher.launch(ImageCropActivity.intent(requireContext(), sourceUri, destinationUri))
     }
 
     private fun onEditedImageReady(editedUri: Uri) {
         val existingBlockId = pendingImageTargetBlockId
         pendingImageTargetBlockId = null
+        val storedImageUri = runCatching {
+            documentImageStore.persistImageFromUri(editedUri)
+        }.getOrElse { error ->
+            Toast.makeText(requireContext(), R.string.text_image_edit_failed, Toast.LENGTH_SHORT).show()
+            appendLog("Failed to persist edited image: ${error.message ?: getString(R.string.unknown_error)}")
+            return
+        }
         val newBlock = ImageBlock(
             id = existingBlockId ?: UUID.randomUUID().toString(),
-            imageUri = editedUri.toString(),
+            imageUri = storedImageUri,
             alignment = BlockAlignment.CENTER
         )
 
@@ -546,6 +535,13 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             val existingImageBlock = currentDocument.blocks
                 .filterIsInstance<ImageBlock>()
                 .firstOrNull { it.id == existingBlockId }
+            existingImageBlock
+                ?.takeIf { block ->
+                    currentDocument.blocks
+                        .filterIsInstance<ImageBlock>()
+                        .count { it.imageUri == block.imageUri } == 1
+                }
+                ?.let { documentImageStore.deleteManagedImage(it.imageUri) }
             CanvasDocumentEditor.replaceBlock(
                 currentDocument,
                 newBlock.copy(
@@ -602,7 +598,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private fun saveDocumentToUri(uri: Uri) {
         runCatching {
             requireContext().contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use { writer ->
-                writer.write(CanvasDocumentCodec.encode(currentDocument))
+                writer.write(CanvasDocumentCodec.encodeForExport(currentDocument, documentImageStore))
             } ?: error("Unable to open output stream.")
             readDisplayName(uri) ?: suggestedDocumentFileName()
         }.onSuccess { displayName ->
@@ -632,7 +628,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             Triple(displayName, rawDocument, uri)
         }.onSuccess { (displayName, rawDocument, sourceUri) ->
             currentSavedDocumentName = displayName
-            updateDocument(CanvasDocumentCodec.decode(rawDocument))
+            updateDocument(CanvasDocumentCodec.decodeImported(rawDocument, documentImageStore))
             Toast.makeText(
                 requireContext(),
                 getString(R.string.text_load_document_success, displayName),

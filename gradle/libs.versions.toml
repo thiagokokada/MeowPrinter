@@ -13,7 +13,7 @@ navigationUiKtx = "2.6.0"
 lifecycleRuntimeKtx = "2.9.0"
 lifecycleViewmodelKtx = "2.9.0"
 nordicBle = "2.11.0"
-ucrop = "2.2.11"
+androidImageCropper = "4.7.0"
 markwon = "4.6.2"
 iconics = "5.5.0"
 
@@ -31,7 +31,7 @@ androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 nordic-ble = { group = "no.nordicsemi.android", name = "ble", version.ref = "nordicBle" }
-ucrop = { group = "com.github.yalantis", name = "ucrop", version.ref = "ucrop" }
+android-image-cropper = { group = "com.vanniktech", name = "android-image-cropper", version.ref = "androidImageCropper" }
 markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
 markwon-ext-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markwon" }
 iconics-core = { group = "com.mikepenz", name = "iconics-core", version.ref = "iconics" }

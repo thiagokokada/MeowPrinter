@@ -128,6 +128,7 @@ class BlePrinterManager(
             return txValid && rxValid
         }
 
+        @Deprecated("Required override from Nordic BleManager API.")
         override fun initialize() {
             val rx = requireNotNull(rxCharacteristic)
             setNotificationCallback(rx).with { _, data ->
@@ -144,6 +145,7 @@ class BlePrinterManager(
             requestConnectionPriority(ConnectionPriorityRequest.CONNECTION_PRIORITY_HIGH).enqueue()
         }
 
+        @Deprecated("Required override from Nordic BleManager API.")
         override fun onServicesInvalidated() {
             txCharacteristic = null
             rxCharacteristic = null

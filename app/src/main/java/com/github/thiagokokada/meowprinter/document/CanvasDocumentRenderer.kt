@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ImageDecoder
-import android.net.Uri
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +15,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
+import androidx.core.net.toUri
+import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.google.android.material.color.MaterialColors
 import io.noties.markwon.Markwon
@@ -131,7 +132,7 @@ class CanvasDocumentRenderer(
         if (bitmap == null) {
             frame.addView(
                 TextView(context).apply {
-                    text = "Image unavailable"
+                    text = context.getString(R.string.image_unavailable)
                     setTextColor(
                         MaterialColors.getColor(
                             context,
@@ -171,7 +172,7 @@ class CanvasDocumentRenderer(
 
     private fun decodeBitmap(imageUri: String, targetWidthPx: Int): Bitmap? {
         return runCatching {
-            val source = ImageDecoder.createSource(contentResolver, Uri.parse(imageUri))
+            val source = ImageDecoder.createSource(contentResolver, imageUri.toUri())
             ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
                 val sourceWidth = info.size.width
                 val sourceHeight = info.size.height

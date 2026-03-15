@@ -6,7 +6,7 @@
 - `app/src/main/java/com/github/thiagokokada/meowprinter/document`: compose document model, codec, and rendering.
 - `app/src/main/java/com/github/thiagokokada/meowprinter/image`: image preparation and dithering.
 - `app/src/main/java/com/github/thiagokokada/meowprinter/print`: printer protocol, print energy, and built-in test page generation.
-- `app/src/main/java/com/github/thiagokokada/meowprinter/data`: persisted settings, document draft state, and session log state.
+- `app/src/main/java/com/github/thiagokokada/meowprinter/data`: persisted settings, document draft state, managed compose image storage, and session log state.
 - `README.md`: end-user project overview, features, and build/test commands.
 - `LICENSE`: GPL-3.0-or-later project license text.
 
@@ -18,6 +18,18 @@
 - Keep the Image / Compose / Settings structure consistent unless the task explicitly changes navigation.
 - Reuse the shared document render path for compose preview and printing instead of adding separate rendering flows.
 - Prefer the shared Android-Iconics icon packages for UI icons instead of hand-authored vector paths when a suitable icon already exists.
+- The app assumes Android 13+ behavior; do not add pre-Tiramisu compatibility branches unless explicitly requested.
+- Image cropping uses CanHub `CropImageView` hosted inside `ImageCropActivity`, not the deprecated contract/activity wrapper flow.
+- Crop outputs are temporary cache files exposed through `FileProvider`; if crop output format changes, keep the file extension aligned with the compressor format.
+- Compose document image blocks must be persisted into app-managed files via `DocumentImageStore`, not left pointing at transient crop-cache URIs.
+- Keep the draft format and export format distinct:
+  - app draft/state stays lightweight and may reference managed `imageUri` values
+  - exported compose files must be self-contained and embed image bytes
+- Canvas document codec versioning is parser-based:
+  - `CanvasDocumentCodec` only dispatches by version
+  - `CanvasDocumentCodecParserV1` owns the current schema
+  - add new versions by introducing a new parser class, not by growing conditionals inside the dispatcher
+- Update the compose document schema version on every schema change, and add a new parser class for each new version.
 
 ## Verification
 - Unit and build check: `./gradlew :app:assembleDebug :app:testDebugUnitTest`

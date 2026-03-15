@@ -1,5 +1,6 @@
 package com.github.thiagokokada.meowprinter.ble
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
@@ -10,6 +11,7 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.RequiresPermission
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -83,6 +85,7 @@ class BlePrinterScanner(context: Context) {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private fun ScanResult.isCompatiblePrinter(): Boolean {
         val knownNames = setOf("GT01", "GB02", "GB03")
         val serviceUuids = scanRecord?.serviceUuids.orEmpty().map { it.uuid }

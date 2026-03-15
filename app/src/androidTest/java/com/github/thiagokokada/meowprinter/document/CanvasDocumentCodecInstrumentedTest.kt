@@ -1,15 +1,30 @@
 package com.github.thiagokokada.meowprinter.document
 
+import android.content.Context
+import android.graphics.Bitmap
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.github.thiagokokada.meowprinter.data.DocumentImageStore
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.ByteArrayOutputStream
 
 @RunWith(AndroidJUnit4::class)
 class CanvasDocumentCodecInstrumentedTest {
+    private lateinit var context: Context
+    private lateinit var documentImageStore: DocumentImageStore
+
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        documentImageStore = DocumentImageStore(context)
+    }
+
     @Test
     fun encodeAndDecodeRoundTripPreservesBlocks() {
         val document = CanvasDocument(
@@ -43,9 +58,48 @@ class CanvasDocumentCodecInstrumentedTest {
     }
 
     @Test
+    fun exportAndImportRoundTripEmbedsImageBlocks() {
+        val storedImageUri = documentImageStore.persistEmbeddedImage(
+            mimeType = "image/jpeg",
+            bytes = createSampleImageBytes()
+        )
+        val document = CanvasDocument(
+            blocks = listOf(
+                ImageBlock(
+                    id = "image-1",
+                    imageUri = storedImageUri,
+                    alignment = BlockAlignment.CENTER,
+                    ditheringMode = DitheringMode.ORDERED_4X4,
+                    width = ImageBlockWidth.THREE_QUARTERS
+                )
+            )
+        )
+
+        val exported = CanvasDocumentCodec.encodeForExport(document, documentImageStore)
+        val restored = CanvasDocumentCodec.decodeImported(exported, documentImageStore)
+        val restoredBlock = restored.blocks.single() as ImageBlock
+
+        assertTrue(exported.contains("\"version\":1"))
+        assertTrue(exported.contains("\"dataBase64\""))
+        assertTrue(restoredBlock.imageUri.startsWith("content://"))
+        assertEquals(DitheringMode.ORDERED_4X4, restoredBlock.ditheringMode)
+        assertEquals(ImageBlockWidth.THREE_QUARTERS, restoredBlock.width)
+    }
+
+    @Test
     fun encodeAndDecodeRoundTripPreservesEmptyDocument() {
         val restored = CanvasDocumentCodec.decode(CanvasDocumentCodec.encode(CanvasDocument.empty()))
 
         assertTrue(restored.blocks.isEmpty())
+    }
+
+    private fun createSampleImageBytes(): ByteArray {
+        val bitmap = Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(0xff112233.toInt())
+        }
+        return ByteArrayOutputStream().use { output ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, output)
+            output.toByteArray()
+        }
     }
 }

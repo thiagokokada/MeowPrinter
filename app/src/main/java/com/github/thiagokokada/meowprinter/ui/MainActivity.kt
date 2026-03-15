@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.inputmethod.EditorInfo
@@ -12,10 +11,11 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.github.thiagokokada.meowprinter.R
@@ -30,18 +30,16 @@ import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
-import com.mikepenz.iconics.IconicsDrawable
-import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
 import com.github.thiagokokada.meowprinter.print.PrinterTestPage
+import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import java.io.File
-import com.yalantis.ucrop.UCrop
-import com.yalantis.ucrop.UCropActivity
 
 class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var binding: ActivityMainBinding
@@ -124,7 +122,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     ) { result ->
         when (result.resultCode) {
             RESULT_OK -> {
-                val editedUri = result.data?.let(UCrop::getOutput)
+                val editedUri = result.data?.data
                 if (editedUri == null) {
                     currentStatus = getString(R.string.image_edit_failed)
                     appendLog("Image editing finished without an output file.")
@@ -146,9 +144,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             }
 
             else -> {
-                val error = result.data?.let(UCrop::getError)
                 currentStatus = getString(R.string.image_edit_failed)
-                appendLog("Image editing failed: ${error?.message ?: getString(R.string.unknown_error)}")
+                appendLog("Image editing failed.")
                 render()
             }
         }
@@ -450,32 +447,16 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         currentStatus = getString(R.string.editing_image)
         render()
 
-        val destinationUri = Uri.fromFile(
-            File(cacheDir, "edited-${System.currentTimeMillis()}.png")
+        val destinationFile = File(
+            cacheDir,
+            "edited-${System.currentTimeMillis()}.jpg"
         )
-        val options = UCrop.Options().apply {
-            setCompressionFormat(android.graphics.Bitmap.CompressFormat.PNG)
-            setCompressionQuality(100)
-            setHideBottomControls(false)
-            setFreeStyleCropEnabled(true)
-            setToolbarColor(ContextCompat.getColor(this@MainActivity, R.color.meow_surface))
-            setToolbarWidgetColor(ContextCompat.getColor(this@MainActivity, R.color.meow_on_surface))
-            setActiveControlsWidgetColor(ContextCompat.getColor(this@MainActivity, R.color.meow_secondary))
-            setRootViewBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.meow_background))
-            setDimmedLayerColor(ContextCompat.getColor(this@MainActivity, R.color.meow_primary_container))
-            setCropGridColor(ContextCompat.getColor(this@MainActivity, R.color.meow_outline))
-            setCropFrameColor(ContextCompat.getColor(this@MainActivity, R.color.meow_secondary))
-        }
-        val intent = UCrop.of(sourceUri, destinationUri)
-            .withOptions(options)
-            .getIntent(this)
-            .apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                setClass(this@MainActivity, UCropActivity::class.java)
-            }
-
-        imageEditorLauncher.launch(intent)
+        val destinationUri = FileProvider.getUriForFile(
+            this,
+            "${packageName}.fileprovider",
+            destinationFile
+        )
+        imageEditorLauncher.launch(ImageCropActivity.intent(this, sourceUri, destinationUri))
     }
 
     private suspend fun connectToPrinter(printer: DiscoveredPrinter) {
@@ -993,9 +974,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     private fun hasNotificationPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return true
-        }
         return ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.POST_NOTIFICATIONS
@@ -1044,13 +1022,11 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     private fun shouldShowNotificationPermissionRationale(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+        return shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun isNotificationPermissionPermanentlyDenied(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !hasNotificationPermission() &&
+        return !hasNotificationPermission() &&
             appSettings.hasRequestedNotificationPermission &&
             !shouldShowNotificationPermissionRationale()
     }

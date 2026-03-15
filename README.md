@@ -33,6 +33,7 @@ Known working / commonly reported Cat / Meow protocol models:
 - `MX06`
 - `MX08`
 - `MX10`
+- `C9`
 
 Known non-compatible family:
 

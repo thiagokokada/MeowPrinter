@@ -633,8 +633,13 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 widthPx = PRINT_RENDER_WIDTH_PX,
                 mode = CanvasDocumentRenderer.RenderMode.PRINT
             )
+            val preparedImage = ImagePrintPreparer.prepare(
+                sourceBitmap = renderedBitmap,
+                ditheringMode = host?.selectedTextDithering() ?: appSettings.selectedDitheringMode,
+                resizerMode = appSettings.selectedImageResizerMode
+            )
             val displayWidth = (resources.displayMetrics.widthPixels - dp(64)).coerceAtLeast(dp(180))
-            PreviewBitmapScaler.scaleForDisplay(renderedBitmap, displayWidth)
+            PreviewBitmapScaler.scaleForDisplay(preparedImage.previewBitmap, displayWidth)
         }.onSuccess { previewBitmap ->
             val dialogView = layoutInflater.inflate(R.layout.dialog_compose_preview, null)
             dialogView.findViewById<ImageView>(R.id.image_compose_preview).setImageBitmap(previewBitmap)

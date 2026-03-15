@@ -41,6 +41,7 @@ import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -152,6 +153,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         binding?.buttonLoadDocument?.setOnClickListener {
             loadDocumentLauncher.launch(arrayOf(DOCUMENT_MIME_TYPE))
         }
+        binding?.buttonPreviewDocument?.setOnClickListener { previewDocument() }
         binding?.buttonPrintDocument?.setOnClickListener { printDocument() }
         binding?.buttonComposeConnection?.setOnClickListener {
             host?.refreshPrinterConnection()
@@ -613,6 +615,34 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         }.onFailure { error ->
             Toast.makeText(requireContext(), R.string.text_print_failed, Toast.LENGTH_SHORT).show()
             appendLog("Document render failed before print: ${error.message ?: getString(R.string.unknown_error)}")
+        }
+    }
+
+    private fun previewDocument() {
+        if (currentDocument.blocks.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.text_document_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        runCatching {
+            val renderedBitmap = documentRenderer.renderBitmap(
+                document = currentDocument,
+                widthPx = PRINT_RENDER_WIDTH_PX,
+                mode = CanvasDocumentRenderer.RenderMode.PRINT
+            )
+            val displayWidth = (resources.displayMetrics.widthPixels - dp(64)).coerceAtLeast(dp(180))
+            PreviewBitmapScaler.scaleForDisplay(renderedBitmap, displayWidth)
+        }.onSuccess { previewBitmap ->
+            val dialogView = layoutInflater.inflate(R.layout.dialog_compose_preview, null)
+            dialogView.findViewById<ImageView>(R.id.image_compose_preview).setImageBitmap(previewBitmap)
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.text_preview_document)
+                .setView(dialogView)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }.onFailure { error ->
+            Toast.makeText(requireContext(), R.string.text_preview_failed, Toast.LENGTH_SHORT).show()
+            appendLog("Document preview failed: ${error.message ?: getString(R.string.unknown_error)}")
         }
     }
 

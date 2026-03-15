@@ -48,6 +48,7 @@
     <string name="markdown_helper_table">Table</string>
     <string name="text_block_alignment_label">Alignment</string>
     <string name="text_block_size_label">Font size</string>
+    <string name="text_block_font_label">Font</string>
     <string name="text_edit_text">Edit text block</string>
     <string name="text_edit_image">Edit image block</string>
     <string name="text_replace_image">Replace image</string>

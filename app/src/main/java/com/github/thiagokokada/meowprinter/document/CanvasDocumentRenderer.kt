@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ImageDecoder
+import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -96,6 +97,30 @@ class CanvasDocumentRenderer(
         block: TextBlock,
         contentWidthPx: Int,
         mode: RenderMode
+    ): View {
+        if (mode == RenderMode.PREVIEW) {
+            val printContentWidthPx = CatPrinterProtocol.PRINT_WIDTH - (PRINT_HORIZONTAL_PADDING_PX * 2)
+            val printView = buildTextBlockTextView(block, printContentWidthPx, RenderMode.PRINT)
+            val renderedBitmap = renderViewToBitmap(printView, Color.WHITE)
+            val displayedBitmap = PreviewBitmapScaler.scaleForDisplay(renderedBitmap, contentWidthPx)
+            return ImageView(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    displayedBitmap.width,
+                    displayedBitmap.height
+                )
+                setImageBitmap(displayedBitmap)
+                adjustViewBounds = true
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+        }
+
+        return buildTextBlockTextView(block, contentWidthPx, mode)
+    }
+
+    private fun buildTextBlockTextView(
+        block: TextBlock,
+        contentWidthPx: Int,
+        mode: RenderMode
     ): TextView {
         val textColor = if (mode == RenderMode.PRINT) {
             Color.BLACK
@@ -116,6 +141,7 @@ class CanvasDocumentRenderer(
             } else {
                 block.textSize.previewSp
             }
+            typeface = Typeface.create(block.textFont.toTypeface(), Typeface.NORMAL)
             includeFontPadding = false
             gravity = block.alignment.toGravity()
             if (mode == RenderMode.PRINT) {
@@ -221,6 +247,10 @@ class CanvasDocumentRenderer(
     enum class RenderMode {
         PREVIEW,
         PRINT
+    }
+
+    companion object {
+        private const val PRINT_HORIZONTAL_PADDING_PX = 20
     }
 }
 

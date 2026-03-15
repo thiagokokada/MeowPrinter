@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.thiagokokada.meowprinter.data.DocumentImageStore
+import com.github.thiagokokada.meowprinter.document.CanvasTextFont
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
@@ -35,7 +36,8 @@ class CanvasDocumentCodecInstrumentedTest {
                     id = "text-1",
                     markdown = "## Bold text\n\n| A | B |\n| --- | --- |\n| 1 | 2 |",
                     alignment = BlockAlignment.RIGHT,
-                    textSize = CanvasTextSize.SP20
+                    textSize = CanvasTextSize.SP20,
+                    textFont = CanvasTextFont.MONOSPACE
                 ),
                 ImageBlock(
                     id = "image-1",
@@ -56,6 +58,7 @@ class CanvasDocumentCodecInstrumentedTest {
         assertEquals("## Bold text\n\n| A | B |\n| --- | --- |\n| 1 | 2 |", textBlock.markdown)
         assertEquals(BlockAlignment.RIGHT, textBlock.alignment)
         assertEquals(CanvasTextSize.SP20, textBlock.textSize)
+        assertEquals(CanvasTextFont.MONOSPACE, textBlock.textFont)
         val imageBlock = restored.blocks.last() as ImageBlock
         assertEquals(DitheringMode.ATKINSON, imageBlock.ditheringMode)
         assertEquals(ImageProcessingMode.SHARPEN, imageBlock.processingMode)

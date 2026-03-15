@@ -88,10 +88,10 @@ class AppSettings(context: Context) {
         private const val KEY_REQUESTED_BLE_PERMISSIONS = "requested_ble_permissions"
         private const val KEY_REQUESTED_NOTIFICATION_PERMISSION = "requested_notification_permission"
         private const val KEY_CANVAS_DOCUMENT_DRAFT = "canvas_document_draft"
-        private const val DEFAULT_PRINT_PACING_PERCENT = 60
+        private const val DEFAULT_PRINT_PACING_PERCENT = 100
         private const val DEFAULT_PAPER_MOVE_STEPS = 25
         private const val MAX_PAPER_STEPS = 255
-        private const val DEFAULT_END_PAPER_PASSES = 3
+        private const val DEFAULT_END_PAPER_PASSES = 1
         private const val MAX_END_PAPER_PASSES = 3
     }
 }

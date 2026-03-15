@@ -108,6 +108,20 @@ class MainActivityTest {
         }
     }
 
+    @Test
+    fun previewDocumentShowsComposePreviewDialog() {
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+
+        scenario?.onActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_text
+            activity.findViewById<View>(R.id.button_preview_document).performClick()
+
+            val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
+            assertEquals(true, fragment.isPreviewDialogShowingForTest())
+        }
+    }
+
     private fun activityString(activity: android.app.Activity, resId: Int): String {
         return activity.getString(resId)
     }

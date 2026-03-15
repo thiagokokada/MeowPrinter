@@ -67,6 +67,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private lateinit var appSettings: AppSettings
     private lateinit var documentImageStore: DocumentImageStore
     private lateinit var documentRenderer: CanvasDocumentRenderer
+    private var previewDialog: AlertDialog? = null
     private var currentDocument = CanvasDocument.default()
     private var currentSavedDocumentName: String? = null
     private var pendingImageTargetBlockId: String? = null
@@ -173,6 +174,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     override fun onDestroyView() {
+        previewDialog?.dismiss()
+        previewDialog = null
         binding = null
         super.onDestroyView()
     }
@@ -635,7 +638,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         }.onSuccess { previewBitmap ->
             val dialogView = layoutInflater.inflate(R.layout.dialog_compose_preview, null)
             dialogView.findViewById<ImageView>(R.id.image_compose_preview).setImageBitmap(previewBitmap)
-            AlertDialog.Builder(requireContext())
+            previewDialog?.dismiss()
+            previewDialog = AlertDialog.Builder(requireContext())
                 .setTitle(R.string.text_preview_document)
                 .setView(dialogView)
                 .setPositiveButton(android.R.string.ok, null)
@@ -644,6 +648,10 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             Toast.makeText(requireContext(), R.string.text_preview_failed, Toast.LENGTH_SHORT).show()
             appendLog("Document preview failed: ${error.message ?: getString(R.string.unknown_error)}")
         }
+    }
+
+    internal fun isPreviewDialogShowingForTest(): Boolean {
+        return previewDialog?.isShowing == true
     }
 
     private fun confirmStartNewDocument() {

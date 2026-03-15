@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -63,6 +64,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private var ignorePaperMoveFieldCallback = false
     private var isAppVisible = false
     private var pendingNotificationPermissionAction: (() -> Unit)? = null
+    private lateinit var logsBackCallback: OnBackPressedCallback
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -173,6 +175,12 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 showScreen(R.id.navigation_settings)
             }
         }
+        logsBackCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                showScreen(R.id.navigation_settings)
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, logsBackCallback)
 
         ditheringAdapter = ArrayAdapter(
             this,
@@ -333,6 +341,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.textFragmentContainer.isVisible = tabId == R.id.navigation_text
         binding.settingsScroll.isVisible = tabId == R.id.navigation_settings
         binding.logsScroll.isVisible = tabId == SCREEN_LOGS
+        logsBackCallback.isEnabled = tabId == SCREEN_LOGS
         binding.screenTitle.text = when (tabId) {
             R.id.navigation_image -> getString(R.string.nav_image)
             R.id.navigation_text -> getString(R.string.nav_text)

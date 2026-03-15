@@ -9,7 +9,6 @@ import android.provider.Settings
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -64,7 +63,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private var ignorePaperMoveFieldCallback = false
     private var isAppVisible = false
     private var pendingNotificationPermissionAction: (() -> Unit)? = null
-    private lateinit var logsBackCallback: OnBackPressedCallback
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -167,20 +165,9 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.toolbar.applyTopSystemBarPadding()
         binding.imageContent.applySideAndBottomSystemBarsPadding()
         binding.settingsContent.applySideAndBottomSystemBarsPadding()
-        binding.logsContent.applySideAndBottomSystemBarsPadding()
         binding.bottomNavigation.applySideAndBottomSystemBarsPadding()
         binding.appTitle.text = getString(R.string.app_name)
-        binding.toolbar.setNavigationOnClickListener {
-            if (selectedTabId == SCREEN_LOGS) {
-                showScreen(R.id.navigation_settings)
-            }
-        }
-        logsBackCallback = object : OnBackPressedCallback(false) {
-            override fun handleOnBackPressed() {
-                showScreen(R.id.navigation_settings)
-            }
-        }
-        onBackPressedDispatcher.addCallback(this, logsBackCallback)
+        binding.toolbar.setNavigationOnClickListener(null)
 
         ditheringAdapter = ArrayAdapter(
             this,
@@ -276,11 +263,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             ensureBlePermissionsThen { movePaper(forward = false) }
         }
         binding.buttonOpenLogs.setOnClickListener {
-            showScreen(SCREEN_LOGS)
-        }
-        binding.buttonClearLogs.setOnClickListener {
-            LogStore.clear()
-            render()
+            startActivity(Intent(this, LogsActivity::class.java))
         }
         binding.buttonScanPrinters.setOnClickListener {
             ensureBlePermissionsThen { scanPrinters() }
@@ -293,8 +276,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             showScreen(item.itemId)
             true
         }
-        binding.bottomNavigation.selectedItemId =
-            if (selectedTabId == SCREEN_LOGS) R.id.navigation_settings else selectedTabId
+        binding.bottomNavigation.selectedItemId = selectedTabId
 
         showScreen(selectedTabId)
         handleIntent(intent)
@@ -340,20 +322,12 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.imageScroll.isVisible = tabId == R.id.navigation_image
         binding.textFragmentContainer.isVisible = tabId == R.id.navigation_text
         binding.settingsScroll.isVisible = tabId == R.id.navigation_settings
-        binding.logsScroll.isVisible = tabId == SCREEN_LOGS
-        logsBackCallback.isEnabled = tabId == SCREEN_LOGS
         binding.screenTitle.text = when (tabId) {
             R.id.navigation_image -> getString(R.string.nav_image)
             R.id.navigation_text -> getString(R.string.nav_text)
-            SCREEN_LOGS -> getString(R.string.logs_screen_title)
             else -> getString(R.string.nav_settings)
         }
-        val showBack = tabId == SCREEN_LOGS
-        binding.toolbar.navigationIcon = if (showBack) {
-            AppCompatResources.getDrawable(this, androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-        } else {
-            null
-        }
+        binding.toolbar.navigationIcon = null
         render()
     }
 
@@ -854,8 +828,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.buttonAdvancePaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
         binding.buttonRetractPaper.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
         binding.buttonOpenLogs.isEnabled = true
-
-        binding.logsValue.text = LogStore.asText().ifBlank { getString(R.string.no_logs_yet) }
         renderPrinterChoices()
         (supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment)
             ?.refreshConnectionSummary()
@@ -1063,6 +1035,5 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     companion object {
         const val ACTION_CANCEL_PRINT = "com.github.thiagokokada.meowprinter.action.CANCEL_PRINT"
         private const val KEY_SELECTED_TAB = "selected_tab"
-        private const val SCREEN_LOGS = -1
     }
 }

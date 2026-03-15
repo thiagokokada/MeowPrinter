@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private var ignorePaperMoveFieldCallback = false
     private var isAppVisible = false
     private var pendingNotificationPermissionAction: (() -> Unit)? = null
+    private var imagePreviewDialog: AlertDialog? = null
 
     private val imageSection get() = binding.imageSection
     private val settingsSection get() = binding.settingsSection
@@ -301,6 +302,9 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         imageSection.buttonImageConnection.setOnClickListener {
             ensureBlePermissionsThen { maybeAutoConnect(force = true) }
         }
+        imageSection.buttonPreviewImage.setOnClickListener {
+            previewSelectedImage()
+        }
         imageSection.buttonPrintImage.setOnClickListener {
             printSelectedImage()
         }
@@ -357,6 +361,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     override fun onDestroy() {
         currentJob?.cancel()
+        imagePreviewDialog?.dismiss()
+        imagePreviewDialog = null
         ActivePrintController.finish()
         PrintNotificationManager.dismiss(applicationContext)
         printerManager?.release()
@@ -571,6 +577,38 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         ensureNotificationPermissionThen {
             startPrintPreparedImage(image, "selected image")
         }
+    }
+
+    private fun previewSelectedImage() {
+        val image = selectedImage
+        if (image == null) {
+            Toast.makeText(this, R.string.no_image_selected, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_image_preview, null)
+        dialogView.findViewById<android.widget.ImageView>(R.id.image_full_preview).setImageBitmap(
+            PreviewBitmapScaler.scaleForDisplay(
+                image.previewBitmap,
+                (resources.displayMetrics.widthPixels - dp(64)).coerceAtLeast(dp(180))
+            )
+        )
+
+        imagePreviewDialog?.dismiss()
+        imagePreviewDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.preview_image)
+            .setView(dialogView)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    internal fun setSelectedImageForTest(preparedImage: PreparedPrintImage) {
+        selectedImage = preparedImage
+        render()
+    }
+
+    internal fun isImagePreviewDialogShowingForTest(): Boolean {
+        return imagePreviewDialog?.isShowing == true
     }
 
     override fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String) {
@@ -899,6 +937,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             imageSection.imagePreview.setImageBitmap(null)
         }
         imageSection.buttonPickImage.isEnabled = true
+        imageSection.buttonPreviewImage.isEnabled = selectedImage != null
         imageSection.buttonPrintImage.isEnabled = connected && selectedImage != null && !ActivePrintController.isPrintActive && !isBusy
 
         val savedPrinterName = appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)

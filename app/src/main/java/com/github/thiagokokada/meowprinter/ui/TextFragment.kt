@@ -41,6 +41,7 @@ import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -66,6 +67,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private lateinit var appSettings: AppSettings
     private lateinit var documentImageStore: DocumentImageStore
     private lateinit var documentRenderer: CanvasDocumentRenderer
+    private var previewDialog: AlertDialog? = null
     private var currentDocument = CanvasDocument.default()
     private var currentSavedDocumentName: String? = null
     private var pendingImageTargetBlockId: String? = null
@@ -152,6 +154,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         binding?.buttonLoadDocument?.setOnClickListener {
             loadDocumentLauncher.launch(arrayOf(DOCUMENT_MIME_TYPE))
         }
+        binding?.buttonPreviewDocument?.setOnClickListener { previewDocument() }
         binding?.buttonPrintDocument?.setOnClickListener { printDocument() }
         binding?.buttonComposeConnection?.setOnClickListener {
             host?.refreshPrinterConnection()
@@ -171,6 +174,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     override fun onDestroyView() {
+        previewDialog?.dismiss()
+        previewDialog = null
         binding = null
         super.onDestroyView()
     }
@@ -614,6 +619,44 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             Toast.makeText(requireContext(), R.string.text_print_failed, Toast.LENGTH_SHORT).show()
             appendLog("Document render failed before print: ${error.message ?: getString(R.string.unknown_error)}")
         }
+    }
+
+    private fun previewDocument() {
+        if (currentDocument.blocks.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.text_document_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        runCatching {
+            val renderedBitmap = documentRenderer.renderBitmap(
+                document = currentDocument,
+                widthPx = PRINT_RENDER_WIDTH_PX,
+                mode = CanvasDocumentRenderer.RenderMode.PRINT
+            )
+            val preparedImage = ImagePrintPreparer.prepare(
+                sourceBitmap = renderedBitmap,
+                ditheringMode = host?.selectedTextDithering() ?: appSettings.selectedDitheringMode,
+                resizerMode = appSettings.selectedImageResizerMode
+            )
+            val displayWidth = (resources.displayMetrics.widthPixels - dp(64)).coerceAtLeast(dp(180))
+            PreviewBitmapScaler.scaleForDisplay(preparedImage.previewBitmap, displayWidth)
+        }.onSuccess { previewBitmap ->
+            val dialogView = layoutInflater.inflate(R.layout.dialog_compose_preview, null)
+            dialogView.findViewById<ImageView>(R.id.image_compose_preview).setImageBitmap(previewBitmap)
+            previewDialog?.dismiss()
+            previewDialog = AlertDialog.Builder(requireContext())
+                .setTitle(R.string.text_preview_document)
+                .setView(dialogView)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }.onFailure { error ->
+            Toast.makeText(requireContext(), R.string.text_preview_failed, Toast.LENGTH_SHORT).show()
+            appendLog("Document preview failed: ${error.message ?: getString(R.string.unknown_error)}")
+        }
+    }
+
+    internal fun isPreviewDialogShowingForTest(): Boolean {
+        return previewDialog?.isShowing == true
     }
 
     private fun confirmStartNewDocument() {

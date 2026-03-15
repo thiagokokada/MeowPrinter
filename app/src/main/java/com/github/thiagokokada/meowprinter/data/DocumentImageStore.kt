@@ -7,6 +7,7 @@ import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import java.io.File
 import java.util.UUID
+import androidx.core.net.toUri
 
 class DocumentImageStore(private val context: Context) {
     data class StoredImage(
@@ -32,7 +33,7 @@ class DocumentImageStore(private val context: Context) {
     }
 
     fun readImage(imageUri: String): StoredImage {
-        val uri = Uri.parse(imageUri)
+        val uri = imageUri.toUri()
         val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: error("Unable to read document image from $imageUri")
         val mimeType = contentResolver.getType(uri)
@@ -45,7 +46,7 @@ class DocumentImageStore(private val context: Context) {
     }
 
     fun deleteManagedImage(imageUri: String) {
-        val uri = Uri.parse(imageUri)
+        val uri = imageUri.toUri()
         if (uri.scheme != ContentResolver.SCHEME_CONTENT || uri.authority != authority) {
             return
         }

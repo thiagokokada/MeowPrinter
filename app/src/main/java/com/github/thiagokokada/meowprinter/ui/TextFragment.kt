@@ -2,8 +2,7 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -16,11 +15,9 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import android.content.res.ColorStateList
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageButton
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -48,14 +45,14 @@ import com.google.android.material.color.MaterialColors
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.IIcon
 import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
+import org.json.JSONObject
 import java.io.File
 import java.util.UUID
-import org.json.JSONObject
 
 class TextFragment : Fragment(R.layout.fragment_text) {
     interface Host {
         fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String)
-        fun selectedTextDithering(): com.github.thiagokokada.meowprinter.image.DitheringMode
+        fun selectedTextDithering(): DitheringMode
         fun connectionSummary(): ConnectionSummary
         fun refreshPrinterConnection()
         fun isPrintInProgress(): Boolean

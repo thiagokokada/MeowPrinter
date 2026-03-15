@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.inputmethod.EditorInfo
@@ -12,9 +11,9 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
@@ -31,11 +30,11 @@ import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
-import com.mikepenz.iconics.IconicsDrawable
-import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
 import com.github.thiagokokada.meowprinter.print.PrinterTestPage
+import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -975,9 +974,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     private fun hasNotificationPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return true
-        }
         return ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.POST_NOTIFICATIONS
@@ -1026,13 +1022,11 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     private fun shouldShowNotificationPermissionRationale(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+        return shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun isNotificationPermissionPermanentlyDenied(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !hasNotificationPermission() &&
+        return !hasNotificationPermission() &&
             appSettings.hasRequestedNotificationPermission &&
             !shouldShowNotificationPermissionRationale()
     }

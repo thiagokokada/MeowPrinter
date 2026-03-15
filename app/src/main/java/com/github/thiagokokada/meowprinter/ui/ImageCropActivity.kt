@@ -38,9 +38,9 @@ class ImageCropActivity : AppCompatActivity() {
         binding.toolbar.applyTopSystemBarPadding()
         binding.cropImageView.applySideAndBottomSystemBarsPadding()
 
-        sourceUri = intent.getParcelableExtra(EXTRA_SOURCE_URI)
+        sourceUri = intent.getParcelableExtra(EXTRA_SOURCE_URI, Uri::class.java)
             ?: return finishWithError(getString(R.string.image_crop_source_missing))
-        outputUri = intent.getParcelableExtra(EXTRA_OUTPUT_URI)
+        outputUri = intent.getParcelableExtra(EXTRA_OUTPUT_URI, Uri::class.java)
             ?: return finishWithError(getString(R.string.image_crop_output_missing))
 
         binding.toolbar.setNavigationOnClickListener {

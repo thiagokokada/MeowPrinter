@@ -406,7 +406,12 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     private suspend fun ensureForegroundPrinterReady(printerAddress: String): BlePrinterManager? {
         val activeManager = printerManager
-        if (activeManager?.isPrinterReady == true && appSettings.selectedPrinterAddress == printerAddress) {
+        val strategy = SavedPrinterConnectionSelector.select(
+            activeManagerReady = activeManager?.isPrinterReady == true,
+            activePrinterAddress = appSettings.selectedPrinterAddress,
+            requestedPrinterAddress = printerAddress
+        )
+        if (strategy == SavedPrinterConnectionStrategy.REUSE_FOREGROUND) {
             return activeManager
         }
 

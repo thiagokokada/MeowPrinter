@@ -65,13 +65,14 @@ class CanvasDocumentRendererInstrumentedTest {
     }
 
     private fun createStripedImageBytes(): ByteArray {
-        val bitmap = Bitmap.createBitmap(112, 56, Bitmap.Config.ARGB_8888).apply {
+        val bitmap = Bitmap.createBitmap(768, 384, Bitmap.Config.ARGB_8888).apply {
             for (y in 0 until height) {
                 for (x in 0 until width) {
-                    val color = when (x % 4) {
-                        0, 1 -> Color.BLACK
-                        2 -> Color.WHITE
-                        else -> Color.BLACK
+                    val color = when (x % 7) {
+                        0, 1, 2 -> Color.BLACK
+                        3, 4 -> Color.WHITE
+                        5 -> Color.BLACK
+                        else -> Color.WHITE
                     }
                     setPixel(x, y, color)
                 }

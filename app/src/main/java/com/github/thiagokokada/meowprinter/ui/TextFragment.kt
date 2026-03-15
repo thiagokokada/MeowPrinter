@@ -21,6 +21,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.github.thiagokokada.meowprinter.R
@@ -500,8 +501,14 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     private fun launchImageEditor(sourceUri: Uri) {
-        val destinationUri = Uri.fromFile(
-            File(requireContext().cacheDir, "document-image-${System.currentTimeMillis()}.png")
+        val destinationFile = File(
+            requireContext().cacheDir,
+            "document-image-${System.currentTimeMillis()}.jpg"
+        )
+        val destinationUri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.fileprovider",
+            destinationFile
         )
         imageEditorLauncher.launch(ImageCropActivity.intent(requireContext(), sourceUri, destinationUri))
     }

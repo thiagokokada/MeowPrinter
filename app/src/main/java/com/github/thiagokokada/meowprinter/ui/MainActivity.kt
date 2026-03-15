@@ -16,6 +16,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.github.thiagokokada.meowprinter.R
@@ -447,8 +448,14 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         currentStatus = getString(R.string.editing_image)
         render()
 
-        val destinationUri = Uri.fromFile(
-            File(cacheDir, "edited-${System.currentTimeMillis()}.png")
+        val destinationFile = File(
+            cacheDir,
+            "edited-${System.currentTimeMillis()}.jpg"
+        )
+        val destinationUri = FileProvider.getUriForFile(
+            this,
+            "${packageName}.fileprovider",
+            destinationFile
         )
         imageEditorLauncher.launch(ImageCropActivity.intent(this, sourceUri, destinationUri))
     }

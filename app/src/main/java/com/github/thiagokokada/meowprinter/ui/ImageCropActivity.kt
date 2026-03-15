@@ -2,24 +2,18 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.canhub.cropper.CropImageView
 import com.github.thiagokokada.meowprinter.R
 import com.github.thiagokokada.meowprinter.databinding.ActivityImageCropBinding
 import com.google.android.material.color.MaterialColors
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
 
 class ImageCropActivity : AppCompatActivity() {
     private enum class CropAction(
@@ -57,27 +51,26 @@ class ImageCropActivity : AppCompatActivity() {
 
         binding.cropImageView.guidelines = CropImageView.Guidelines.ON_TOUCH
         binding.cropImageView.setFixedAspectRatio(false)
+        binding.cropImageView.setOnCropImageCompleteListener { _, result ->
+            binding.toolbar.menu.setGroupEnabled(0, true)
+            if (!result.isSuccessful) {
+                finishWithError(result.error?.message ?: getString(R.string.image_crop_failed))
+                return@setOnCropImageCompleteListener
+            }
+            val editedUri = result.uriContent ?: outputUri
+            setResult(RESULT_OK, Intent().setData(editedUri))
+            finish()
+        }
         binding.cropImageView.setImageUriAsync(sourceUri)
     }
 
     private fun saveCroppedImage() {
         binding.toolbar.menu.setGroupEnabled(0, false)
-        lifecycleScope.launch {
-            try {
-                val bitmap = binding.cropImageView.getCroppedImage()
-                    ?: return@launch finishWithError(getString(R.string.image_crop_failed))
-                withContext(Dispatchers.IO) {
-                    writeBitmap(bitmap, outputUri)
-                }
-                val resultIntent = Intent().setData(outputUri)
-                setResult(RESULT_OK, resultIntent)
-                finish()
-            } catch (e: Exception) {
-                finishWithError(e.message ?: getString(R.string.image_crop_failed))
-            } finally {
-                binding.toolbar.menu.setGroupEnabled(0, true)
-            }
-        }
+        binding.cropImageView.croppedImageAsync(
+            saveCompressFormat = android.graphics.Bitmap.CompressFormat.JPEG,
+            saveCompressQuality = 90,
+            customOutputUri = outputUri,
+        )
     }
 
     private fun bindToolbarActions() {
@@ -121,17 +114,6 @@ class ImageCropActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         setResult(RESULT_CANCELED)
         finish()
-    }
-
-    private fun writeBitmap(bitmap: Bitmap, destinationUri: Uri) {
-        val outputStream = when (destinationUri.scheme) {
-            "file", null -> File(destinationUri.path.orEmpty()).outputStream()
-            else -> contentResolver.openOutputStream(destinationUri)
-        } ?: error("Unable to open output stream for $destinationUri")
-
-        outputStream.use { stream ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        }
     }
 
     companion object {

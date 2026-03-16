@@ -97,22 +97,6 @@ class CanvasDocumentRenderer(
         contentWidthPx: Int,
         mode: RenderMode
     ): View {
-        if (mode == RenderMode.PREVIEW) {
-            val printContentWidthPx = CatPrinterProtocol.PRINT_WIDTH - (PRINT_HORIZONTAL_PADDING_PX * 2)
-            val printView = buildTextBlockTextView(block, printContentWidthPx, RenderMode.PRINT)
-            val renderedBitmap = renderViewToBitmap(printView, Color.WHITE)
-            val displayedBitmap = PreviewBitmapScaler.scaleForDisplay(renderedBitmap, contentWidthPx)
-            return ImageView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    displayedBitmap.width,
-                    displayedBitmap.height
-                )
-                setImageBitmap(displayedBitmap)
-                adjustViewBounds = true
-                scaleType = ImageView.ScaleType.FIT_CENTER
-            }
-        }
-
         return buildTextBlockTextView(block, contentWidthPx, mode)
     }
 
@@ -246,10 +230,6 @@ class CanvasDocumentRenderer(
     enum class RenderMode {
         PREVIEW,
         PRINT
-    }
-
-    companion object {
-        private const val PRINT_HORIZONTAL_PADDING_PX = 20
     }
 }
 

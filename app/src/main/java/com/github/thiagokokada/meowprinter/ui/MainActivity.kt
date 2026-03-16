@@ -26,6 +26,7 @@ import com.github.thiagokokada.meowprinter.ble.PrintPacing
 import com.github.thiagokokada.meowprinter.data.AppSettings
 import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
+import com.github.thiagokokada.meowprinter.document.SharedQrPayloadParser
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
@@ -875,7 +876,21 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                     appendLog("Received shared image.")
                     launchImageEditor(sharedImageUri)
                 } else {
-                    appendLog("Ignored share intent without an image.")
+                    val sharedText = extractSharedText(intent)
+                    if (!sharedText.isNullOrBlank()) {
+                        val payload = SharedQrPayloadParser.parse(sharedText)
+                        showScreen(R.id.navigation_text)
+                        (supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment)
+                            ?.appendSharedQrPayload(payload)
+                        appendLog("Received shared text and added it as a QR block.")
+                        Toast.makeText(
+                            this,
+                            getString(R.string.shared_qr_added_typed, payload.type.displayName),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        appendLog("Ignored share intent without an image or text.")
+                    }
                 }
                 intent.action = null
             }
@@ -892,6 +907,19 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             ?.takeIf { it.itemCount > 0 }
             ?.getItemAt(0)
             ?.uri
+    }
+
+    private fun extractSharedText(intent: Intent): String? {
+        val isTextShare = intent.type?.startsWith("text/") == true
+        if (!isTextShare) {
+            return null
+        }
+        return intent.getStringExtra(Intent.EXTRA_TEXT)
+            ?: intent.clipData
+                ?.takeIf { it.itemCount > 0 }
+                ?.getItemAt(0)
+                ?.coerceToText(this)
+                ?.toString()
     }
 
     private fun finishTrackedJob(job: Job) {

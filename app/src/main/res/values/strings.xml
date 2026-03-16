@@ -88,6 +88,7 @@
     <string name="qr_content_required">Enter QR content first.</string>
     <string name="qr_content_too_large">QR content is too large for the selected size</string>
     <string name="qr_unavailable">QR code unavailable</string>
+    <string name="shared_qr_added_typed">Added shared content as a %1$s QR code</string>
     <string name="image_block_dithering_label">Dithering</string>
     <string name="image_block_width_label">Width</string>
     <string name="save">Save</string>

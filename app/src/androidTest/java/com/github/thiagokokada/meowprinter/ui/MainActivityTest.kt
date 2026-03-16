@@ -1,6 +1,7 @@
 package com.github.thiagokokada.meowprinter.ui
 
 import android.graphics.Bitmap
+import android.content.Intent
 import android.view.View
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
@@ -63,6 +64,31 @@ class MainActivityTest {
                 View.VISIBLE,
                 activity.findViewById<View>(R.id.button_pick_image).visibility
             )
+        }
+    }
+
+    @Test
+    fun sharedTextOpensComposeWithQrBlock() {
+        scenario = ActivityScenario.launch<MainActivity>(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, "https://example.com")
+            }
+        )
+
+        scenario?.onActivity { activity ->
+            assertEquals(
+                View.VISIBLE,
+                activity.findViewById<View>(R.id.text_fragment_container).visibility
+            )
+
+            val container = activity.findViewById<LinearLayout>(R.id.text_blocks_container)
+            val hasQrCard = (0 until container.childCount)
+                .mapNotNull { index -> container.getChildAt(index) }
+                .flatMap { card -> collectText(card) }
+                .any { it == activity.getString(R.string.block_title_qr) }
+
+            assertEquals(true, hasQrCard)
         }
     }
 

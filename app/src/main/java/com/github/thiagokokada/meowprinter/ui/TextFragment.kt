@@ -224,6 +224,16 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 host?.isPrintInProgress() != true
     }
 
+    fun appendSharedQrPayload(payload: QrPayload) {
+        val block = QrBlock(
+            id = UUID.randomUUID().toString(),
+            payload = payload,
+            alignment = BlockAlignment.CENTER,
+            size = QrBlockSize.MEDIUM
+        )
+        updateDocument(CanvasDocumentEditor.appendBlock(currentDocument, block))
+    }
+
     private fun renderConnectionSummary(): ConnectionSummary? {
         val summary = host?.connectionSummary() ?: return null
         binding?.composePrinterValue?.text = summary.printerName

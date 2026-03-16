@@ -15,10 +15,10 @@ class PrintPacingProfileTest {
     }
 
     @Test
-    fun balancedProfileMatchesSixtyPercent() {
+    fun balancedProfileMatchesFortyFivePercent() {
         val balanced = PrintPacingProfile.BALANCED.toPacing(customPercent = 42)
 
-        assertEquals(PrintPacing.fromPercent(60), balanced)
+        assertEquals(PrintPacing.fromPercent(45), balanced)
     }
 
     @Test

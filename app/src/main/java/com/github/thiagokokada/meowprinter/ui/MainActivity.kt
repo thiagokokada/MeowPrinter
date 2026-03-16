@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var appSettings: AppSettings
     private lateinit var printerAdapter: ArrayAdapter<String>
     private lateinit var printPacingProfileAdapter: ArrayAdapter<String>
+    private lateinit var endPaperPassesAdapter: ArrayAdapter<String>
 
     private var printerManager: BlePrinterManager? = null
     private var connectedPrinterName: String? = null
@@ -275,6 +276,25 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 render()
             }
         }
+        endPaperPassesAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listOf(
+                getString(R.string.end_paper_passes_0),
+                getString(R.string.end_paper_passes_1),
+                getString(R.string.end_paper_passes_2),
+                getString(R.string.end_paper_passes_3)
+            )
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        settingsSection.spinnerEndPaperPasses.adapter = endPaperPassesAdapter
+        settingsSection.spinnerEndPaperPasses.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            if (appSettings.selectedEndPaperPasses != position) {
+                appSettings.selectedEndPaperPasses = position
+                render()
+            }
+        }
         settingsSection.sliderEnergy.addOnChangeListener { _, value, fromUser ->
             if (!fromUser || ignoreEnergySliderCallback) {
                 return@addOnChangeListener
@@ -309,10 +329,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         settingsSection.buttonPaperSteps25.setOnClickListener { updatePaperMoveSteps(25) }
         settingsSection.buttonPaperSteps50.setOnClickListener { updatePaperMoveSteps(50) }
         settingsSection.buttonPaperSteps100.setOnClickListener { updatePaperMoveSteps(100) }
-        settingsSection.buttonEndPaperPasses0.setOnClickListener { updateEndPaperPasses(0) }
-        settingsSection.buttonEndPaperPasses1.setOnClickListener { updateEndPaperPasses(1) }
-        settingsSection.buttonEndPaperPasses2.setOnClickListener { updateEndPaperPasses(2) }
-        settingsSection.buttonEndPaperPasses3.setOnClickListener { updateEndPaperPasses(3) }
         imageSection.buttonPickImage.setOnClickListener {
             imagePickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -1102,7 +1118,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             ignorePaperMoveFieldCallback = false
         }
         settingsSection.inputLayoutPaperMoveSteps.error = null
-        settingsSection.endPaperPassesValue.text = getString(R.string.end_paper_passes_value, appSettings.selectedEndPaperPasses)
+        settingsSection.spinnerEndPaperPasses.setSelection(appSettings.selectedEndPaperPasses, false)
         settingsSection.buttonScanPrinters.isEnabled = !isBusy
         settingsSection.buttonSavePrinter.isEnabled = selectedPrinter != null && !isBusy
         settingsSection.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
@@ -1182,11 +1198,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     private fun updatePaperMoveSteps(steps: Int) {
         appSettings.selectedPaperMoveSteps = steps
-        render()
-    }
-
-    private fun updateEndPaperPasses(passes: Int) {
-        appSettings.selectedEndPaperPasses = passes
         render()
     }
 

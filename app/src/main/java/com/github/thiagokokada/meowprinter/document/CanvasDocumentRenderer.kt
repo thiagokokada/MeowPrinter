@@ -21,6 +21,7 @@ import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
+import com.google.zxing.WriterException
 import com.google.android.material.color.MaterialColors
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
@@ -89,6 +90,7 @@ class CanvasDocumentRenderer(
         return when (block) {
             is TextBlock -> createTextBlockView(block, contentWidthPx, mode)
             is ImageBlock -> createImageBlockView(block, contentWidthPx)
+            is QrBlock -> createQrBlockView(block, contentWidthPx, mode)
         }
     }
 
@@ -186,6 +188,61 @@ class CanvasDocumentRenderer(
         return frame
     }
 
+    private fun createQrBlockView(
+        block: QrBlock,
+        contentWidthPx: Int,
+        mode: RenderMode
+    ): View {
+        val frame = FrameLayout(context).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        val targetSizePx = (contentWidthPx * block.size.fraction).toInt().coerceAtLeast(dpToPx(96))
+        val qrBitmap = runCatching {
+            QrBitmapGenerator.generate(block.payload, targetSizePx)
+        }.getOrElse {
+            return createQrErrorView(frame, it)
+        }
+        val displayedBitmap = if (mode == RenderMode.PRINT) {
+            qrBitmap
+        } else {
+            PreviewBitmapScaler.scaleForDisplay(qrBitmap, targetSizePx)
+        }
+        frame.addView(
+            ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    displayedBitmap.width,
+                    displayedBitmap.height,
+                    block.alignment.toLayoutGravity()
+                )
+                setImageBitmap(displayedBitmap)
+                adjustViewBounds = true
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+        )
+        return frame
+    }
+
+    private fun createQrErrorView(frame: FrameLayout, error: Throwable): View {
+        val messageRes = if (error is WriterException) {
+            R.string.qr_content_too_large
+        } else {
+            R.string.qr_unavailable
+        }
+        frame.addView(
+            TextView(context).apply {
+                text = context.getString(messageRes)
+                setTextColor(
+                    MaterialColors.getColor(
+                        context,
+                        com.google.android.material.R.attr.colorOnSurfaceVariant,
+                        Color.BLACK
+                    )
+                )
+            }
+        )
+        return frame
+    }
+
     private fun decodeBitmap(imageUri: String, targetWidthPx: Int, resizerMode: ImageResizerMode): Bitmap? {
         return runCatching {
             val source = ImageDecoder.createSource(contentResolver, imageUri.toUri())
@@ -225,6 +282,10 @@ class CanvasDocumentRenderer(
                 heightPx
             )
         }
+    }
+
+    private fun dpToPx(value: Int): Int {
+        return (value * context.resources.displayMetrics.density).toInt()
     }
 
     enum class RenderMode {

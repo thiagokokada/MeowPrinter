@@ -6,12 +6,16 @@ import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.text.InputType
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -33,10 +37,24 @@ import com.github.thiagokokada.meowprinter.document.CanvasDocumentEditor
 import com.github.thiagokokada.meowprinter.document.CanvasDocumentRenderer
 import com.github.thiagokokada.meowprinter.document.CanvasTextFont
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
+import com.github.thiagokokada.meowprinter.document.CalendarQrPayload
+import com.github.thiagokokada.meowprinter.document.ContactQrPayload
 import com.github.thiagokokada.meowprinter.document.DocumentBlock
+import com.github.thiagokokada.meowprinter.document.EmailQrPayload
+import com.github.thiagokokada.meowprinter.document.GeoQrPayload
 import com.github.thiagokokada.meowprinter.document.ImageBlock
 import com.github.thiagokokada.meowprinter.document.ImageBlockWidth
+import com.github.thiagokokada.meowprinter.document.PhoneQrPayload
+import com.github.thiagokokada.meowprinter.document.QrBlock
+import com.github.thiagokokada.meowprinter.document.QrBlockSize
+import com.github.thiagokokada.meowprinter.document.QrContentType
+import com.github.thiagokokada.meowprinter.document.QrPayload
+import com.github.thiagokokada.meowprinter.document.QrWifiSecurity
+import com.github.thiagokokada.meowprinter.document.SmsQrPayload
 import com.github.thiagokokada.meowprinter.document.TextBlock
+import com.github.thiagokokada.meowprinter.document.TextQrPayload
+import com.github.thiagokokada.meowprinter.document.UrlQrPayload
+import com.github.thiagokokada.meowprinter.document.WifiQrPayload
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
@@ -68,6 +86,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private lateinit var documentImageStore: DocumentImageStore
     private lateinit var documentRenderer: CanvasDocumentRenderer
     private var previewDialog: AlertDialog? = null
+    private var qrDialog: AlertDialog? = null
     private var currentDocument = CanvasDocument.default()
     private var currentSavedDocumentName: String? = null
     private var pendingImageTargetBlockId: String? = null
@@ -147,6 +166,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         binding?.textContent?.applySideAndBottomSystemBarsPadding()
         binding?.buttonAddTextBlock?.setOnClickListener { showTextBlockDialog() }
         binding?.buttonAddImageBlock?.setOnClickListener { startImageInsert() }
+        binding?.buttonAddQrBlock?.setOnClickListener { showQrBlockDialog() }
         binding?.buttonNewDocument?.setOnClickListener { confirmStartNewDocument() }
         binding?.buttonSaveDocument?.setOnClickListener {
             saveDocumentLauncher.launch(suggestedDocumentFileName())
@@ -176,6 +196,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     override fun onDestroyView() {
         previewDialog?.dismiss()
         previewDialog = null
+        qrDialog?.dismiss()
+        qrDialog = null
         binding = null
         super.onDestroyView()
     }
@@ -306,6 +328,24 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 )
                 addView(contentView)
             }
+
+            is QrBlock -> MaterialCardView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).also { params ->
+                    params.topMargin = topMargin
+                }
+                radius = dp(18).toFloat()
+                setCardBackgroundColor(
+                    MaterialColors.getColor(
+                        context,
+                        com.google.android.material.R.attr.colorSurface,
+                        0
+                    )
+                )
+                addView(contentView)
+            }
         }
     }
 
@@ -318,6 +358,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 when (block) {
                     is TextBlock -> showTextBlockDialog(block)
                     is ImageBlock -> showImageBlockDialog(block)
+                    is QrBlock -> showQrBlockDialog(block)
                 }
             })
             addView(iconActionButton(FontAwesome.Icon.faw_clone, R.string.duplicate) {
@@ -372,6 +413,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         return when (block) {
             is TextBlock -> getString(R.string.block_title_text)
             is ImageBlock -> getString(R.string.block_title_image)
+            is QrBlock -> getString(R.string.block_title_qr)
         }
     }
 
@@ -574,6 +616,222 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             .show()
     }
 
+    private fun showQrBlockDialog(existingBlock: QrBlock? = null) {
+        val context = requireContext()
+        val block = existingBlock ?: QrBlock(
+            id = UUID.randomUUID().toString(),
+            payload = TextQrPayload(""),
+            alignment = BlockAlignment.CENTER,
+            size = QrBlockSize.MEDIUM
+        )
+        val contentContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(8), dp(8), 0)
+        }
+        val scrollView = ScrollView(context).apply {
+            addView(contentContainer)
+        }
+
+        contentContainer.addView(dialogLabel(R.string.qr_type_label))
+        val typeSpinner = Spinner(context).also { spinner ->
+            setupSpinner(spinner, QrContentType.entries.map { it.displayName }, block.payload.type.ordinal)
+            contentContainer.addView(spinner)
+        }
+
+        contentContainer.addView(dialogLabel(R.string.text_block_alignment_label))
+        val alignmentSpinner = Spinner(context).also { spinner ->
+            setupSpinner(spinner, BlockAlignment.entries.map { it.displayName }, block.alignment.ordinal)
+            contentContainer.addView(spinner)
+        }
+
+        contentContainer.addView(dialogLabel(R.string.qr_size_label))
+        val sizeSpinner = Spinner(context).also { spinner ->
+            setupSpinner(spinner, QrBlockSize.entries.map { it.displayName }, block.size.ordinal)
+            contentContainer.addView(spinner)
+        }
+
+        val payloadContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        contentContainer.addView(payloadContainer)
+
+        val textInput = qrInput(
+            initialValue = (block.payload as? TextQrPayload)?.text.orEmpty(),
+            labelRes = R.string.qr_text_label,
+            multiline = true
+        )
+        val urlInput = qrInput(initialValue = (block.payload as? UrlQrPayload)?.url.orEmpty(), labelRes = R.string.qr_url_label)
+        val wifiPayload = block.payload as? WifiQrPayload
+        val wifiSsidInput = qrInput(initialValue = wifiPayload?.ssid.orEmpty(), labelRes = R.string.qr_wifi_ssid_label)
+        val wifiPasswordInput = qrInput(initialValue = wifiPayload?.password.orEmpty(), labelRes = R.string.qr_wifi_password_label)
+        val wifiHiddenInput = CheckBox(context).apply {
+            text = getString(R.string.qr_wifi_hidden_label)
+            isChecked = wifiPayload?.hidden == true
+        }
+        val wifiSecuritySpinner = Spinner(context).also { spinner ->
+            setupSpinner(
+                spinner,
+                QrWifiSecurity.entries.map { it.displayName },
+                (wifiPayload?.security ?: QrWifiSecurity.WPA).ordinal
+            )
+        }
+        val phoneInput = qrInput(initialValue = (block.payload as? PhoneQrPayload)?.number.orEmpty(), labelRes = R.string.qr_phone_label)
+        val emailPayload = block.payload as? EmailQrPayload
+        val emailToInput = qrInput(initialValue = emailPayload?.to.orEmpty(), labelRes = R.string.qr_email_to_label)
+        val emailSubjectInput = qrInput(initialValue = emailPayload?.subject.orEmpty(), labelRes = R.string.qr_email_subject_label)
+        val emailBodyInput = qrInput(initialValue = emailPayload?.body.orEmpty(), labelRes = R.string.qr_email_body_label, multiline = true)
+        val smsPayload = block.payload as? SmsQrPayload
+        val smsNumberInput = qrInput(initialValue = smsPayload?.number.orEmpty(), labelRes = R.string.qr_sms_number_label)
+        val smsMessageInput = qrInput(initialValue = smsPayload?.message.orEmpty(), labelRes = R.string.qr_sms_message_label, multiline = true)
+        val geoPayload = block.payload as? GeoQrPayload
+        val geoLatitudeInput = qrInput(initialValue = geoPayload?.latitude.orEmpty(), labelRes = R.string.qr_geo_latitude_label, inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED)
+        val geoLongitudeInput = qrInput(initialValue = geoPayload?.longitude.orEmpty(), labelRes = R.string.qr_geo_longitude_label, inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED)
+        val geoQueryInput = qrInput(initialValue = geoPayload?.query.orEmpty(), labelRes = R.string.qr_geo_query_label)
+        val contactPayload = block.payload as? ContactQrPayload
+        val contactNameInput = qrInput(initialValue = contactPayload?.name.orEmpty(), labelRes = R.string.qr_contact_name_label)
+        val contactPhoneInput = qrInput(initialValue = contactPayload?.phone.orEmpty(), labelRes = R.string.qr_contact_phone_label)
+        val contactEmailInput = qrInput(initialValue = contactPayload?.email.orEmpty(), labelRes = R.string.qr_contact_email_label)
+        val contactOrgInput = qrInput(initialValue = contactPayload?.organization.orEmpty(), labelRes = R.string.qr_contact_organization_label)
+        val contactAddressInput = qrInput(initialValue = contactPayload?.address.orEmpty(), labelRes = R.string.qr_contact_address_label, multiline = true)
+        val contactUrlInput = qrInput(initialValue = contactPayload?.url.orEmpty(), labelRes = R.string.qr_contact_url_label)
+        val calendarPayload = block.payload as? CalendarQrPayload
+        val calendarTitleInput = qrInput(initialValue = calendarPayload?.title.orEmpty(), labelRes = R.string.qr_calendar_title_label)
+        val calendarStartInput = qrInput(initialValue = calendarPayload?.start.orEmpty(), labelRes = R.string.qr_calendar_start_label)
+        val calendarEndInput = qrInput(initialValue = calendarPayload?.end.orEmpty(), labelRes = R.string.qr_calendar_end_label)
+        val calendarLocationInput = qrInput(initialValue = calendarPayload?.location.orEmpty(), labelRes = R.string.qr_calendar_location_label)
+        val calendarDescriptionInput = qrInput(initialValue = calendarPayload?.description.orEmpty(), labelRes = R.string.qr_calendar_description_label, multiline = true)
+
+        fun section(vararg views: View): LinearLayout {
+            return LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                views.forEach(::addView)
+            }
+        }
+
+        val payloadSections = mapOf(
+            QrContentType.TEXT to section(textInput),
+            QrContentType.URL to section(urlInput),
+            QrContentType.WIFI to section(
+                wifiSsidInput,
+                wifiPasswordInput,
+                dialogLabel(R.string.qr_wifi_security_label),
+                wifiSecuritySpinner,
+                wifiHiddenInput
+            ),
+            QrContentType.PHONE to section(phoneInput),
+            QrContentType.EMAIL to section(emailToInput, emailSubjectInput, emailBodyInput),
+            QrContentType.SMS to section(smsNumberInput, smsMessageInput),
+            QrContentType.GEO to section(geoLatitudeInput, geoLongitudeInput, geoQueryInput),
+            QrContentType.CONTACT to section(
+                contactNameInput,
+                contactPhoneInput,
+                contactEmailInput,
+                contactOrgInput,
+                contactAddressInput,
+                contactUrlInput
+            ),
+            QrContentType.CALENDAR to section(
+                calendarTitleInput,
+                calendarStartInput,
+                calendarEndInput,
+                calendarLocationInput,
+                calendarDescriptionInput
+            )
+        )
+        payloadSections.values.forEach(payloadContainer::addView)
+
+        fun selectedQrPayload(): QrPayload {
+            return when (QrContentType.entries[typeSpinner.selectedItemPosition]) {
+                QrContentType.TEXT -> TextQrPayload(textInput.textValue())
+                QrContentType.URL -> UrlQrPayload(urlInput.textValue())
+                QrContentType.WIFI -> WifiQrPayload(
+                    ssid = wifiSsidInput.textValue(),
+                    password = wifiPasswordInput.textValue(),
+                    security = QrWifiSecurity.entries[wifiSecuritySpinner.selectedItemPosition],
+                    hidden = wifiHiddenInput.isChecked
+                )
+                QrContentType.PHONE -> PhoneQrPayload(phoneInput.textValue())
+                QrContentType.EMAIL -> EmailQrPayload(
+                    to = emailToInput.textValue(),
+                    subject = emailSubjectInput.textValue(),
+                    body = emailBodyInput.textValue()
+                )
+                QrContentType.SMS -> SmsQrPayload(
+                    number = smsNumberInput.textValue(),
+                    message = smsMessageInput.textValue()
+                )
+                QrContentType.GEO -> GeoQrPayload(
+                    latitude = geoLatitudeInput.textValue(),
+                    longitude = geoLongitudeInput.textValue(),
+                    query = geoQueryInput.textValue()
+                )
+                QrContentType.CONTACT -> ContactQrPayload(
+                    name = contactNameInput.textValue(),
+                    phone = contactPhoneInput.textValue(),
+                    email = contactEmailInput.textValue(),
+                    organization = contactOrgInput.textValue(),
+                    address = contactAddressInput.textValue(),
+                    url = contactUrlInput.textValue()
+                )
+                QrContentType.CALENDAR -> CalendarQrPayload(
+                    title = calendarTitleInput.textValue(),
+                    start = calendarStartInput.textValue(),
+                    end = calendarEndInput.textValue(),
+                    location = calendarLocationInput.textValue(),
+                    description = calendarDescriptionInput.textValue()
+                )
+            }
+        }
+
+        fun updateVisiblePayloadSection() {
+            val selectedType = QrContentType.entries[typeSpinner.selectedItemPosition]
+            payloadSections.forEach { (type, view) ->
+                view.isVisible = type == selectedType
+            }
+        }
+
+        typeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                updateVisiblePayloadSection()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+        updateVisiblePayloadSection()
+
+        val dialog = AlertDialog.Builder(context)
+            .setTitle(if (existingBlock == null) R.string.text_add_qr else R.string.text_edit_qr)
+            .setView(scrollView)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.save, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val payload = selectedQrPayload()
+                if (!payload.hasMeaningfulContent()) {
+                    Toast.makeText(context, R.string.qr_content_required, Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                val updatedBlock = block.copy(
+                    payload = payload,
+                    alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
+                    size = QrBlockSize.entries[sizeSpinner.selectedItemPosition]
+                )
+                updateDocument(
+                    if (existingBlock == null) {
+                        CanvasDocumentEditor.appendBlock(currentDocument, updatedBlock)
+                    } else {
+                        CanvasDocumentEditor.replaceBlock(currentDocument, updatedBlock)
+                    }
+                )
+                dialog.dismiss()
+            }
+        }
+        qrDialog?.dismiss()
+        qrDialog = dialog
+        dialog.show()
+    }
+
     private fun startImageInsert() {
         imagePickerLauncher.launch(
             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -705,6 +963,22 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         return previewDialog?.isShowing == true
     }
 
+    internal fun qrDialogForTest(): AlertDialog? = qrDialog
+
+    internal fun hasQrBlockForTest(): Boolean {
+        return currentDocument.blocks.any { it is QrBlock }
+    }
+
+    internal fun appendQrBlockForTest(payload: QrPayload) {
+        val block = QrBlock(
+            id = UUID.randomUUID().toString(),
+            payload = payload,
+            alignment = BlockAlignment.CENTER,
+            size = QrBlockSize.MEDIUM
+        )
+        updateDocument(CanvasDocumentEditor.appendBlock(currentDocument, block))
+    }
+
     private fun confirmStartNewDocument() {
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.text_new_document_title)
@@ -807,6 +1081,44 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         spinner.setSelection(selectedIndex, false)
     }
 
+    private fun dialogLabel(textRes: Int): TextView {
+        return TextView(requireContext()).apply {
+            text = getString(textRes)
+            setPadding(0, dp(16), 0, dp(8))
+        }
+    }
+
+    private fun qrInput(
+        initialValue: String,
+        labelRes: Int,
+        multiline: Boolean = false,
+        inputType: Int = InputType.TYPE_CLASS_TEXT
+    ): EditText {
+        return EditText(requireContext()).apply {
+            hint = getString(labelRes)
+            tag = resources.getResourceEntryName(labelRes)
+            setText(initialValue)
+            this.inputType = if (multiline) {
+                inputType or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            } else {
+                inputType
+            }
+            if (multiline) {
+                minLines = 3
+                maxLines = 6
+                isSingleLine = false
+                setHorizontallyScrolling(false)
+                gravity = android.view.Gravity.TOP or android.view.Gravity.START
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).also { params ->
+                params.topMargin = dp(8)
+            }
+        }
+    }
+
     private fun appendLog(message: String) {
         LogStore.append(message)
     }
@@ -821,6 +1133,22 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         private const val KEY_DOCUMENT_STATE = "document_state"
         private const val KEY_DOCUMENT_NAME = "document_name"
         private const val PRINT_RENDER_WIDTH_PX = 384
+    }
+}
+
+private fun EditText.textValue(): String = text?.toString().orEmpty().trim()
+
+private fun QrPayload.hasMeaningfulContent(): Boolean {
+    return when (this) {
+        is TextQrPayload -> text.isNotBlank()
+        is UrlQrPayload -> url.isNotBlank()
+        is WifiQrPayload -> ssid.isNotBlank()
+        is PhoneQrPayload -> number.isNotBlank()
+        is EmailQrPayload -> to.isNotBlank() || subject.isNotBlank() || body.isNotBlank()
+        is SmsQrPayload -> number.isNotBlank() || message.isNotBlank()
+        is GeoQrPayload -> latitude.isNotBlank() && longitude.isNotBlank()
+        is ContactQrPayload -> listOf(name, phone, email, organization, address, url).any(String::isNotBlank)
+        is CalendarQrPayload -> listOf(title, start, end, location, description).any(String::isNotBlank)
     }
 }
 

@@ -47,23 +47,40 @@ class CanvasDocumentCodecInstrumentedTest {
                     processingMode = ImageProcessingMode.SHARPEN,
                     resizerMode = ImageResizerMode.AREA_AVERAGE,
                     width = ImageBlockWidth.HALF
+                ),
+                QrBlock(
+                    id = "qr-1",
+                    payload = WifiQrPayload(
+                        ssid = "MeowNet",
+                        password = "secret",
+                        security = QrWifiSecurity.WPA,
+                        hidden = true
+                    ),
+                    alignment = BlockAlignment.CENTER,
+                    size = QrBlockSize.LARGE
                 )
             )
         )
 
         val restored = CanvasDocumentCodec.decode(CanvasDocumentCodec.encode(document))
 
-        assertEquals(2, restored.blocks.size)
+        assertEquals(3, restored.blocks.size)
         val textBlock = restored.blocks.first() as TextBlock
         assertEquals("## Bold text\n\n| A | B |\n| --- | --- |\n| 1 | 2 |", textBlock.markdown)
         assertEquals(BlockAlignment.RIGHT, textBlock.alignment)
         assertEquals(CanvasTextSize.SP20, textBlock.textSize)
         assertEquals(CanvasTextFont.MONOSPACE, textBlock.textFont)
-        val imageBlock = restored.blocks.last() as ImageBlock
+        val imageBlock = restored.blocks[1] as ImageBlock
         assertEquals(DitheringMode.ATKINSON, imageBlock.ditheringMode)
         assertEquals(ImageProcessingMode.SHARPEN, imageBlock.processingMode)
         assertEquals(ImageResizerMode.AREA_AVERAGE, imageBlock.resizerMode)
         assertEquals(ImageBlockWidth.HALF, imageBlock.width)
+        val qrBlock = restored.blocks[2] as QrBlock
+        val qrPayload = qrBlock.payload as WifiQrPayload
+        assertEquals("MeowNet", qrPayload.ssid)
+        assertEquals(QrWifiSecurity.WPA, qrPayload.security)
+        assertTrue(qrPayload.hidden)
+        assertEquals(QrBlockSize.LARGE, qrBlock.size)
     }
 
     @Test

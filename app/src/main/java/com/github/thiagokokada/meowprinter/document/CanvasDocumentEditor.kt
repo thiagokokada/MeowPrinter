@@ -60,6 +60,7 @@ object CanvasDocumentEditor {
         val duplicatedBlock = when (val sourceBlock = document.blocks[sourceIndex]) {
             is TextBlock -> sourceBlock.copy(id = UUID.randomUUID().toString())
             is ImageBlock -> sourceBlock.copy(id = UUID.randomUUID().toString())
+            is QrBlock -> sourceBlock.copy(id = UUID.randomUUID().toString())
         }
 
         return document.copy(

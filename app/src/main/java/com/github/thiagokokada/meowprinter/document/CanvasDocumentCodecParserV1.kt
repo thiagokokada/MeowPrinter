@@ -70,6 +70,13 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
                 .put("processingMode", block.processingMode.name)
                 .put("resizerMode", block.resizerMode.name)
                 .put("width", block.width.name)
+
+            is QrBlock -> JSONObject()
+                .put("type", "qr")
+                .put("id", block.id)
+                .put("alignment", block.alignment.name)
+                .put("size", block.size.name)
+                .put("payload", encodeQrPayload(block.payload))
         }
     }
 
@@ -94,6 +101,7 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
                             .put("dataBase64", Base64.getEncoder().encodeToString(storedImage.bytes))
                     )
             }
+            is QrBlock -> encodeBlock(block)
         }
     }
 
@@ -117,7 +125,133 @@ class CanvasDocumentCodecParserV1 : CanvasDocumentCodecParser {
                 width = ImageBlockWidth.fromStoredValue(jsonObject.optString("width"))
             )
 
+            "qr" -> decodeQrBlock(jsonObject)
+
             else -> null
+        }
+    }
+
+    private fun decodeQrBlock(jsonObject: JSONObject): QrBlock? {
+        val payload = decodeQrPayload(jsonObject.optJSONObject("payload") ?: return null) ?: return null
+        return QrBlock(
+            id = jsonObject.optString("id"),
+            payload = payload,
+            alignment = BlockAlignment.fromStoredValue(jsonObject.optString("alignment")),
+            size = QrBlockSize.fromStoredValue(jsonObject.optString("size"))
+        )
+    }
+
+    private fun encodeQrPayload(payload: QrPayload): JSONObject {
+        return when (payload) {
+            is TextQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("text", payload.text)
+
+            is UrlQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("url", payload.url)
+
+            is WifiQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("ssid", payload.ssid)
+                .put("password", payload.password)
+                .put("security", payload.security.name)
+                .put("hidden", payload.hidden)
+
+            is PhoneQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("number", payload.number)
+
+            is EmailQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("to", payload.to)
+                .put("subject", payload.subject)
+                .put("body", payload.body)
+
+            is SmsQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("number", payload.number)
+                .put("message", payload.message)
+
+            is GeoQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("latitude", payload.latitude)
+                .put("longitude", payload.longitude)
+                .put("query", payload.query)
+
+            is ContactQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("name", payload.name)
+                .put("phone", payload.phone)
+                .put("email", payload.email)
+                .put("organization", payload.organization)
+                .put("address", payload.address)
+                .put("url", payload.url)
+
+            is CalendarQrPayload -> JSONObject()
+                .put("type", payload.type.name)
+                .put("title", payload.title)
+                .put("start", payload.start)
+                .put("end", payload.end)
+                .put("location", payload.location)
+                .put("description", payload.description)
+        }
+    }
+
+    private fun decodeQrPayload(jsonObject: JSONObject): QrPayload? {
+        return when (QrContentType.fromStoredValue(jsonObject.optString("type"))) {
+            QrContentType.TEXT -> TextQrPayload(
+                text = jsonObject.optString("text")
+            )
+
+            QrContentType.URL -> UrlQrPayload(
+                url = jsonObject.optString("url")
+            )
+
+            QrContentType.WIFI -> WifiQrPayload(
+                ssid = jsonObject.optString("ssid"),
+                password = jsonObject.optString("password"),
+                security = QrWifiSecurity.fromStoredValue(jsonObject.optString("security")),
+                hidden = jsonObject.optBoolean("hidden", false)
+            )
+
+            QrContentType.PHONE -> PhoneQrPayload(
+                number = jsonObject.optString("number")
+            )
+
+            QrContentType.EMAIL -> EmailQrPayload(
+                to = jsonObject.optString("to"),
+                subject = jsonObject.optString("subject"),
+                body = jsonObject.optString("body")
+            )
+
+            QrContentType.SMS -> SmsQrPayload(
+                number = jsonObject.optString("number"),
+                message = jsonObject.optString("message")
+            )
+
+            QrContentType.GEO -> GeoQrPayload(
+                latitude = jsonObject.optString("latitude"),
+                longitude = jsonObject.optString("longitude"),
+                query = jsonObject.optString("query")
+            )
+
+            QrContentType.CONTACT -> ContactQrPayload(
+                name = jsonObject.optString("name"),
+                phone = jsonObject.optString("phone"),
+                email = jsonObject.optString("email"),
+                organization = jsonObject.optString("organization"),
+                address = jsonObject.optString("address"),
+                url = jsonObject.optString("url")
+            )
+
+            QrContentType.CALENDAR -> CalendarQrPayload(
+                title = jsonObject.optString("title"),
+                start = jsonObject.optString("start"),
+                end = jsonObject.optString("end"),
+                location = jsonObject.optString("location"),
+                description = jsonObject.optString("description")
+            )
         }
     }
 

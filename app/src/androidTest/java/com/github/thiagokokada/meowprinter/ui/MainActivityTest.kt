@@ -8,6 +8,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.github.thiagokokada.meowprinter.R
+import com.github.thiagokokada.meowprinter.document.TextQrPayload
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
@@ -110,6 +111,10 @@ class MainActivityTest {
                 View.VISIBLE,
                 activity.findViewById<View>(R.id.button_add_text_block).visibility
             )
+            assertEquals(
+                View.VISIBLE,
+                activity.findViewById<View>(R.id.button_add_qr_block).visibility
+            )
         }
     }
 
@@ -124,6 +129,28 @@ class MainActivityTest {
 
             val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
             assertEquals(true, fragment.isPreviewDialogShowingForTest())
+        }
+    }
+
+    @Test
+    fun addQrBlockCreatesComposeBlock() {
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+
+        scenario?.onActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_text
+            val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
+
+            activity.findViewById<View>(R.id.button_add_qr_block).performClick()
+
+            val dialog = fragment.qrDialogForTest()
+            checkNotNull(dialog)
+            assertEquals(true, dialog.isShowing)
+
+            fragment.appendQrBlockForTest(TextQrPayload("https://example.com"))
+
+            val hasQrBlock = fragment.hasQrBlockForTest()
+            assertEquals(true, hasQrBlock)
         }
     }
 

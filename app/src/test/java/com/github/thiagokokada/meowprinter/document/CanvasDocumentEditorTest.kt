@@ -67,4 +67,22 @@ class CanvasDocumentEditorTest {
         val duplicated = updated.blocks[1] as ImageBlock
         assertEquals(ImageBlockWidth.HALF, duplicated.width)
     }
+
+    @Test
+    fun duplicateQrBlockPreservesPayloadAndSize() {
+        val qr = QrBlock(
+            id = "1",
+            payload = UrlQrPayload("https://example.com"),
+            alignment = BlockAlignment.RIGHT,
+            size = QrBlockSize.LARGE
+        )
+        val document = CanvasDocument(listOf(qr))
+
+        val updated = CanvasDocumentEditor.duplicateBlock(document, "1")
+
+        val duplicated = updated.blocks[1] as QrBlock
+        assertNotEquals("1", duplicated.id)
+        assertEquals(qr.payload, duplicated.payload)
+        assertEquals(QrBlockSize.LARGE, duplicated.size)
+    }
 }

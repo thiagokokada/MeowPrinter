@@ -1,7 +1,8 @@
 package com.github.thiagokokada.meowprinter.ui
 
-import android.graphics.Bitmap
 import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
 import android.view.View
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
@@ -68,7 +69,7 @@ class MainActivityTest {
     }
 
     @Test
-    fun sharedTextOpensComposeWithQrBlock() {
+    fun sharedTextShowsImportChooser() {
         scenario = ActivityScenario.launch<MainActivity>(
             Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
@@ -77,18 +78,53 @@ class MainActivityTest {
         )
 
         scenario?.onActivity { activity ->
+            val dialog = activity.shareImportDialogForTest()
+            checkNotNull(dialog)
+            assertEquals(true, dialog.isShowing)
             assertEquals(
-                View.VISIBLE,
-                activity.findViewById<View>(R.id.text_fragment_container).visibility
+                activity.getString(R.string.share_text_title),
+                dialog.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)?.text?.toString()
             )
+        }
+    }
 
-            val container = activity.findViewById<LinearLayout>(R.id.text_blocks_container)
-            val hasQrCard = (0 until container.childCount)
-                .mapNotNull { index -> container.getChildAt(index) }
-                .flatMap { card -> collectText(card) }
-                .any { it == activity.getString(R.string.block_title_qr) }
+    @Test
+    fun sharedTextCanBeAddedAsTextBlock() {
+        val sharedText = "Imported shared text"
+        scenario = ActivityScenario.launch<MainActivity>(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, sharedText)
+            }
+        )
 
-            assertEquals(true, hasQrCard)
+        scenario?.onActivity { activity ->
+            val dialog = activity.shareImportDialogForTest()
+            checkNotNull(dialog)
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick()
+
+            val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
+            assertEquals(true, fragment.hasTextBlockWithMarkdownForTest(sharedText))
+        }
+    }
+
+    @Test
+    fun sharedImageShowsImportChooser() {
+        scenario = ActivityScenario.launch<MainActivity>(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, Uri.parse("content://com.github.thiagokokada.meowprinter.test/shared-image"))
+            }
+        )
+
+        scenario?.onActivity { activity ->
+            val dialog = activity.shareImportDialogForTest()
+            checkNotNull(dialog)
+            assertEquals(true, dialog.isShowing)
+            assertEquals(
+                activity.getString(R.string.share_image_title),
+                dialog.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)?.text?.toString()
+            )
         }
     }
 

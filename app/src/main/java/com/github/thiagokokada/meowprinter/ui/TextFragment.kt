@@ -234,6 +234,22 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         updateDocument(CanvasDocumentEditor.appendBlock(currentDocument, block))
     }
 
+    fun appendSharedTextBlock(markdown: String) {
+        val block = TextBlock(
+            id = UUID.randomUUID().toString(),
+            markdown = markdown,
+            alignment = BlockAlignment.LEFT,
+            textSize = CanvasTextSize.SP12,
+            textFont = CanvasTextFont.SANS_SERIF
+        )
+        updateDocument(CanvasDocumentEditor.appendBlock(currentDocument, block))
+    }
+
+    fun appendSharedImage(sourceUri: Uri) {
+        pendingImageTargetBlockId = null
+        launchImageEditor(sourceUri)
+    }
+
     private fun renderConnectionSummary(): ConnectionSummary? {
         val summary = host?.connectionSummary() ?: return null
         binding?.composePrinterValue?.text = summary.printerName
@@ -977,6 +993,12 @@ class TextFragment : Fragment(R.layout.fragment_text) {
 
     internal fun hasQrBlockForTest(): Boolean {
         return currentDocument.blocks.any { it is QrBlock }
+    }
+
+    internal fun hasTextBlockWithMarkdownForTest(markdown: String): Boolean {
+        return currentDocument.blocks
+            .filterIsInstance<TextBlock>()
+            .any { it.markdown == markdown }
     }
 
     internal fun appendQrBlockForTest(payload: QrPayload) {

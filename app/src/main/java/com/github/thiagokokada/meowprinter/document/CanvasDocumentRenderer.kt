@@ -126,7 +126,8 @@ class CanvasDocumentRenderer(
             } else {
                 block.textSize.previewSp
             }
-            typeface = Typeface.create(block.textFont.toTypeface(), Typeface.NORMAL)
+            typeface = Typeface.create(block.textFont.toTypeface(), block.textWeight.typefaceStyle)
+            paint.isFakeBoldText = block.textWeight.fakeBold
             includeFontPadding = false
             gravity = block.alignment.toGravity()
             if (mode == RenderMode.PRINT) {

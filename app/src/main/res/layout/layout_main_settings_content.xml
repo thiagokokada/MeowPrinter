@@ -143,6 +143,12 @@
                 android:text="@string/energy_subtitle"
                 android:textAppearance="?attr/textAppearanceBodyMedium" />
 
+            <Spinner
+                android:id="@+id/spinner_energy_profile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" />
+
             <TextView
                 android:id="@+id/energy_value"
                 android:layout_width="match_parent"

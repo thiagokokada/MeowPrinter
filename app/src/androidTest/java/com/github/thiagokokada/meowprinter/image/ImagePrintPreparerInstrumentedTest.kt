@@ -100,6 +100,25 @@ class ImagePrintPreparerInstrumentedTest {
         assertTrue(highContrast.rows.single()[0])
     }
 
+    @Test
+    fun prepareRenderedDocumentUsesDirectMonochromeRows() {
+        val bitmap = Bitmap.createBitmap(4, 1, Bitmap.Config.ARGB_8888).apply {
+            setPixel(0, 0, Color.BLACK)
+            setPixel(1, 0, Color.rgb(180, 180, 180))
+            setPixel(2, 0, Color.rgb(220, 220, 220))
+            setPixel(3, 0, Color.WHITE)
+        }
+
+        val prepared = ImagePrintPreparer.prepareRenderedDocument(bitmap, targetWidth = 4)
+
+        assertEquals(DitheringMode.THRESHOLD, prepared.ditheringMode)
+        assertEquals(ImageProcessingMode.NORMAL, prepared.processingMode)
+        assertEquals(ImageResizerMode.SYSTEM_FILTERED, prepared.resizerMode)
+        assertArrayEquals(booleanArrayOf(true, true, false, false), prepared.rows.single())
+        assertEquals(4, prepared.previewBitmap.width)
+        assertEquals(1, prepared.previewBitmap.height)
+    }
+
     private fun rowSignature(row: BooleanArray): String {
         return buildString(row.size) {
             row.forEach { append(if (it) '1' else '0') }

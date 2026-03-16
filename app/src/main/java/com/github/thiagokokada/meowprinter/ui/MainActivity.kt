@@ -36,6 +36,7 @@ import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
 import com.github.thiagokokada.meowprinter.print.PrintEnergy
+import com.github.thiagokokada.meowprinter.print.PrintEnergyProfile
 import com.github.thiagokokada.meowprinter.print.PrinterTestPage
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
@@ -50,6 +51,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var scanner: BlePrinterScanner
     private lateinit var appSettings: AppSettings
     private lateinit var printerAdapter: ArrayAdapter<String>
+    private lateinit var energyProfileAdapter: ArrayAdapter<String>
     private lateinit var printPacingProfileAdapter: ArrayAdapter<String>
     private lateinit var endPaperPassesAdapter: ArrayAdapter<String>
 
@@ -295,11 +297,29 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 render()
             }
         }
+        energyProfileAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            PrintEnergyProfile.entries.map { it.displayName }
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        settingsSection.spinnerEnergyProfile.adapter = energyProfileAdapter
+        settingsSection.spinnerEnergyProfile.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            val selectedProfile = PrintEnergyProfile.entries[position]
+            if (appSettings.selectedPrintEnergyProfile != selectedProfile) {
+                appSettings.selectedPrintEnergyProfile = selectedProfile
+                render()
+            }
+        }
         settingsSection.sliderEnergy.addOnChangeListener { _, value, fromUser ->
             if (!fromUser || ignoreEnergySliderCallback) {
                 return@addOnChangeListener
             }
-            appSettings.selectedPrintEnergy = PrintEnergy.fromPercent(value.toInt())
+            appSettings.selectedCustomPrintEnergyPercent = value.toInt()
+            if (appSettings.selectedPrintEnergyProfile != PrintEnergyProfile.CUSTOM) {
+                appSettings.selectedPrintEnergyProfile = PrintEnergyProfile.CUSTOM
+            }
             render()
         }
         settingsSection.sliderPrintPacing.addOnChangeListener { _, value, fromUser ->
@@ -687,7 +707,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         runTrackedJob(getString(R.string.generating_image_print_job)) { launchedJob ->
             beginActivePrint(launchedJob)
             try {
-                val energy = appSettings.selectedPrintEnergy
+                val energy = currentPrintEnergy()
                 val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
                 val commands = CatPrinterProtocol.commandsPrintImageCommands(
                     preparedImage.rows,
@@ -718,8 +738,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             }
         }
     }
-
-    override fun selectedTextDithering(): DitheringMode = appSettings.selectedDitheringMode
 
     override fun connectionSummary(): ConnectionSummary {
         val connected = printerManager?.isPrinterReady == true
@@ -763,7 +781,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             beginActivePrint(launchedJob)
             try {
                 withSavedPrinterManager(printerAddress) { printerName, manager ->
-                    val energy = appSettings.selectedPrintEnergy
+                    val energy = currentPrintEnergy()
                     val energyLabel = formatEnergy(PrintEnergy.toPercent(energy))
                     currentStatus = getString(R.string.testing_saved_printer_with_energy, energyLabel)
                     render()
@@ -1091,9 +1109,16 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             else -> getString(R.string.disconnected)
         }
         settingsSection.savedPrinterStatusValue.isVisible = savedPrinterAddress != null
-        settingsSection.energyValue.text = formatEnergy(PrintEnergy.toPercent(appSettings.selectedPrintEnergy))
+        val energyProfile = appSettings.selectedPrintEnergyProfile
+        settingsSection.spinnerEnergyProfile.setSelection(
+            PrintEnergyProfile.entries.indexOf(energyProfile),
+            false
+        )
+        settingsSection.energyValue.isVisible = energyProfile == PrintEnergyProfile.CUSTOM
+        settingsSection.sliderEnergy.isVisible = energyProfile == PrintEnergyProfile.CUSTOM
+        settingsSection.energyValue.text = formatEnergy(appSettings.selectedCustomPrintEnergyPercent)
         ignoreEnergySliderCallback = true
-        settingsSection.sliderEnergy.value = PrintEnergy.toPercent(appSettings.selectedPrintEnergy).toFloat()
+        settingsSection.sliderEnergy.value = appSettings.selectedCustomPrintEnergyPercent.toFloat()
         ignoreEnergySliderCallback = false
         val pacingProfile = appSettings.selectedPrintPacingProfile
         settingsSection.spinnerPrintPacingProfile.setSelection(
@@ -1203,6 +1228,10 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     private fun currentPrintPacing(): PrintPacing {
         return appSettings.selectedPrintPacingProfile.toPacing(appSettings.selectedCustomPrintPacingPercent)
+    }
+
+    private fun currentPrintEnergy(): Int {
+        return appSettings.selectedPrintEnergyProfile.toEnergy(appSettings.selectedCustomPrintEnergyPercent)
     }
 
     private fun hasBlePermissions(): Boolean {

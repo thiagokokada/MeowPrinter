@@ -21,7 +21,8 @@ data class CanvasDocument(
                         markdown = "## Meow Printer\n\nThis block supports **Markdown** tables, emphasis, and lists.",
                         alignment = BlockAlignment.LEFT,
                         textSize = CanvasTextSize.SP12,
-                        textFont = CanvasTextFont.SANS_SERIF
+                        textFont = CanvasTextFont.SANS_SERIF,
+                        textWeight = CanvasTextWeight.NORMAL
                     )
                 )
             )
@@ -39,7 +40,8 @@ data class TextBlock(
     val markdown: String,
     override val alignment: BlockAlignment,
     val textSize: CanvasTextSize,
-    val textFont: CanvasTextFont
+    val textFont: CanvasTextFont,
+    val textWeight: CanvasTextWeight = CanvasTextWeight.NORMAL
 ) : DocumentBlock
 
 data class ImageBlock(

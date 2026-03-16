@@ -8,7 +8,7 @@ import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.github.thiagokokada.meowprinter.ble.PrintPacingProfile
-import com.github.thiagokokada.meowprinter.print.PrintEnergy
+import com.github.thiagokokada.meowprinter.print.PrintEnergyProfile
 
 class AppSettings(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -33,10 +33,16 @@ class AppSettings(context: Context) {
         get() = ImageResizerMode.fromStoredValue(preferences.getString(KEY_IMAGE_RESIZER_MODE, null))
         set(value) = preferences.edit { putString(KEY_IMAGE_RESIZER_MODE, value.name) }
 
-    var selectedPrintEnergy: Int
-        get() = preferences.getInt(KEY_PRINT_ENERGY, PrintEnergy.MAX_VALUE).coerceIn(0, PrintEnergy.MAX_VALUE)
+    var selectedPrintEnergyProfile: PrintEnergyProfile
+        get() = PrintEnergyProfile.fromStoredValue(preferences.getString(KEY_PRINT_ENERGY_PROFILE, null))
         set(value) = preferences.edit {
-            putInt(KEY_PRINT_ENERGY, value.coerceIn(0, PrintEnergy.MAX_VALUE))
+            putString(KEY_PRINT_ENERGY_PROFILE, value.name)
+        }
+
+    var selectedCustomPrintEnergyPercent: Int
+        get() = preferences.getInt(KEY_CUSTOM_PRINT_ENERGY_PERCENT, DEFAULT_CUSTOM_PRINT_ENERGY_PERCENT).coerceIn(0, 100)
+        set(value) = preferences.edit {
+            putInt(KEY_CUSTOM_PRINT_ENERGY_PERCENT, value.coerceIn(0, 100))
         }
 
     var selectedPrintPacingProfile: PrintPacingProfile
@@ -88,7 +94,8 @@ class AppSettings(context: Context) {
         private const val KEY_DITHERING_MODE = "selected_dithering_mode"
         private const val KEY_IMAGE_PROCESSING_MODE = "selected_image_processing_mode"
         private const val KEY_IMAGE_RESIZER_MODE = "selected_image_resizer_mode"
-        private const val KEY_PRINT_ENERGY = "selected_print_energy"
+        private const val KEY_PRINT_ENERGY_PROFILE = "selected_print_energy_profile"
+        private const val KEY_CUSTOM_PRINT_ENERGY_PERCENT = "selected_custom_print_energy_percent"
         private const val KEY_PRINT_PACING_PROFILE = "selected_print_pacing_profile"
         private const val KEY_CUSTOM_PRINT_PACING_PERCENT = "selected_custom_print_pacing_percent"
         private const val KEY_PAPER_MOVE_STEPS = "selected_paper_move_steps"
@@ -96,6 +103,7 @@ class AppSettings(context: Context) {
         private const val KEY_REQUESTED_BLE_PERMISSIONS = "requested_ble_permissions"
         private const val KEY_REQUESTED_NOTIFICATION_PERMISSION = "requested_notification_permission"
         private const val KEY_CANVAS_DOCUMENT_DRAFT = "canvas_document_draft"
+        private const val DEFAULT_CUSTOM_PRINT_ENERGY_PERCENT = 65
         private const val DEFAULT_PAPER_MOVE_STEPS = 25
         private const val DEFAULT_CUSTOM_PRINT_PACING_PERCENT = 100
         private const val MAX_PAPER_STEPS = 255

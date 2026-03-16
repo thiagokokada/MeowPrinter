@@ -19,6 +19,7 @@ import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
+import com.github.thiagokokada.meowprinter.print.PrintEnergyProfile
 import org.junit.Assert.assertEquals
 import org.junit.After
 import org.junit.Before
@@ -120,6 +121,32 @@ class MainActivityTest {
 
             val spinner = activity.findViewById<Spinner>(R.id.spinner_end_paper_passes)
             assertEquals(2, spinner.selectedItemPosition)
+        }
+    }
+
+    @Test
+    fun customEnergyProfileShowsSlider() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        AppSettings(context).selectedPrintEnergyProfile = PrintEnergyProfile.CUSTOM
+
+        launchMainActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_settings
+
+            assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.slider_energy).visibility)
+        }
+    }
+
+    @Test
+    fun presetEnergyProfileHidesSlider() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        AppSettings(context).selectedPrintEnergyProfile = PrintEnergyProfile.MEDIUM
+
+        launchMainActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_settings
+
+            assertEquals(View.GONE, activity.findViewById<View>(R.id.slider_energy).visibility)
         }
     }
 

@@ -281,6 +281,10 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                     )
                 )
                 addView(contentView.apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
                     setPadding(dp(14), dp(14), dp(14), dp(14))
                 })
             }

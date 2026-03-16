@@ -48,7 +48,7 @@ data class ImageBlock(
     override val id: String,
     val imageUri: String,
     override val alignment: BlockAlignment,
-    val ditheringMode: DitheringMode = DitheringMode.THRESHOLD,
+    val ditheringMode: DitheringMode = DitheringMode.FLOYD_STEINBERG,
     val processingMode: ImageProcessingMode = ImageProcessingMode.NORMAL,
     val resizerMode: ImageResizerMode = ImageResizerMode.SYSTEM_FILTERED,
     val width: ImageBlockWidth = ImageBlockWidth.FULL

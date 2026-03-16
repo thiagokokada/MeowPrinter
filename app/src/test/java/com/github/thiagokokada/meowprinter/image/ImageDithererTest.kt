@@ -10,7 +10,7 @@ class ImageDithererTest {
         assertEquals(ThresholdImageDitherer, ImageDitherers.forMode(DitheringMode.THRESHOLD))
         assertEquals(FloydSteinbergImageDitherer, ImageDitherers.forMode(DitheringMode.FLOYD_STEINBERG))
         assertEquals(AtkinsonImageDitherer, ImageDitherers.forMode(DitheringMode.ATKINSON))
-        assertEquals(Ordered4x4ImageDitherer, ImageDitherers.forMode(DitheringMode.ORDERED_4X4))
+        assertEquals(Ordered4x4ImageDitherer, ImageDitherers.forMode(DitheringMode.ORDERED_BAYER_4X4))
         assertEquals(OrderedBayer8x8ImageDitherer, ImageDitherers.forMode(DitheringMode.ORDERED_BAYER_8X8))
     }
 
@@ -41,7 +41,7 @@ class ImageDithererTest {
         }
 
         val thresholdRows = ImageDitherers.forMode(DitheringMode.THRESHOLD).rowsFor(grayscale, width = 4, height = 4)
-        val orderedRows = ImageDitherers.forMode(DitheringMode.ORDERED_4X4).rowsFor(grayscale, width = 4, height = 4)
+        val orderedRows = ImageDitherers.forMode(DitheringMode.ORDERED_BAYER_4X4).rowsFor(grayscale, width = 4, height = 4)
 
         assertFalse(rowsEqual(thresholdRows, orderedRows))
     }
@@ -61,7 +61,7 @@ class ImageDithererTest {
             }
         }
 
-        val ordered4x4 = ImageDitherers.forMode(DitheringMode.ORDERED_4X4).rowsFor(grayscale, width = 8, height = 8)
+        val ordered4x4 = ImageDitherers.forMode(DitheringMode.ORDERED_BAYER_4X4).rowsFor(grayscale, width = 8, height = 8)
         val ordered8x8 = ImageDitherers.forMode(DitheringMode.ORDERED_BAYER_8X8).rowsFor(grayscale, width = 8, height = 8)
 
         assertFalse(rowsEqual(ordered4x4, ordered8x8))

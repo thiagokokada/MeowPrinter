@@ -80,13 +80,13 @@ class ImagePrintPreparerInstrumentedTest {
 
         val normal = ImagePrintPreparer.prepare(
             sourceBitmap = bitmap,
-            ditheringMode = DitheringMode.ORDERED_4X4,
+            ditheringMode = DitheringMode.ORDERED_BAYER_4X4,
             processingMode = ImageProcessingMode.NORMAL,
             targetWidth = 4
         )
         val highContrast = ImagePrintPreparer.prepare(
             sourceBitmap = bitmap,
-            ditheringMode = DitheringMode.ORDERED_4X4,
+            ditheringMode = DitheringMode.ORDERED_BAYER_4X4,
             processingMode = ImageProcessingMode.HIGH_CONTRAST,
             targetWidth = 4
         )

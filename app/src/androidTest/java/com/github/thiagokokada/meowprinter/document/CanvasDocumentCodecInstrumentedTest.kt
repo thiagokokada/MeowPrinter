@@ -98,7 +98,7 @@ class CanvasDocumentCodecInstrumentedTest {
                     id = "image-1",
                     imageUri = storedImageUri,
                     alignment = BlockAlignment.CENTER,
-                    ditheringMode = DitheringMode.ORDERED_4X4,
+                    ditheringMode = DitheringMode.ORDERED_BAYER_4X4,
                     processingMode = ImageProcessingMode.HIGH_CONTRAST,
                     resizerMode = ImageResizerMode.NEAREST_NEIGHBOR,
                     width = ImageBlockWidth.THREE_QUARTERS
@@ -113,7 +113,7 @@ class CanvasDocumentCodecInstrumentedTest {
         assertTrue(exported.contains("\"version\":1"))
         assertTrue(exported.contains("\"dataBase64\""))
         assertTrue(restoredBlock.imageUri.startsWith("content://"))
-        assertEquals(DitheringMode.ORDERED_4X4, restoredBlock.ditheringMode)
+        assertEquals(DitheringMode.ORDERED_BAYER_4X4, restoredBlock.ditheringMode)
         assertEquals(ImageProcessingMode.HIGH_CONTRAST, restoredBlock.processingMode)
         assertEquals(ImageResizerMode.NEAREST_NEIGHBOR, restoredBlock.resizerMode)
         assertEquals(ImageBlockWidth.THREE_QUARTERS, restoredBlock.width)

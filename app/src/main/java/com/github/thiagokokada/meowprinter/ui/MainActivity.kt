@@ -919,16 +919,10 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 titleRes = R.string.share_image_title,
                 messageRes = R.string.share_image_message,
                 positiveAction = SharedImportDialogAction(getText(R.string.share_image_print)) {
-                    showScreen(R.id.navigation_image)
-                    appendLog("Received shared image for Image Print.")
-                    launchImageEditor(sharedImageUri)
+                    performSharedImageImportAction(SharedImageImportAction.AddToImagePrint(sharedImageUri))
                 },
                 negativeAction = SharedImportDialogAction(getText(R.string.share_image_compose)) {
-                    showScreen(R.id.navigation_text)
-                    val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
-                    textFragment?.appendSharedImage(sharedImageUri)
-                    appendLog("Received shared image and added it to Compose.")
-                    Toast.makeText(this, R.string.shared_image_added_to_compose, Toast.LENGTH_SHORT).show()
+                    performSharedImageImportAction(SharedImageImportAction.AddToCompose(sharedImageUri))
                 }
             )
         )
@@ -942,27 +936,57 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 titleRes = R.string.share_text_title,
                 messageRes = R.string.share_text_message,
                 positiveAction = SharedImportDialogAction(getText(R.string.share_text_add_text_block)) {
-                    showScreen(R.id.navigation_text)
-                    val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
-                    textFragment?.appendSharedTextBlock(sharedText)
-                    appendLog("Received shared text and added it as a text block.")
-                    Toast.makeText(this, R.string.shared_text_added, Toast.LENGTH_SHORT).show()
+                    performSharedTextImportAction(SharedTextImportAction.AddAsTextBlock(sharedText))
                 },
                 negativeAction = SharedImportDialogAction(
                     getString(R.string.share_text_add_qr_typed, payload.type.displayName)
                 ) {
-                    showScreen(R.id.navigation_text)
-                    val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
-                    textFragment?.appendSharedQrPayload(payload)
-                    appendLog("Received shared text and added it as a QR block.")
-                    Toast.makeText(
-                        this,
-                        getString(R.string.shared_qr_added_typed, payload.type.displayName),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    performSharedTextImportAction(SharedTextImportAction.AddAsQrCode(payload))
                 }
             )
         )
+    }
+
+    private fun performSharedImageImportAction(action: SharedImageImportAction) {
+        when (action) {
+            is SharedImageImportAction.AddToImagePrint -> {
+                showScreen(R.id.navigation_image)
+                appendLog("Received shared image for Image Print.")
+                launchImageEditor(action.uri)
+            }
+
+            is SharedImageImportAction.AddToCompose -> {
+                showScreen(R.id.navigation_text)
+                val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
+                textFragment?.appendSharedImage(action.uri)
+                appendLog("Received shared image and added it to Compose.")
+                Toast.makeText(this, R.string.shared_image_added_to_compose, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun performSharedTextImportAction(action: SharedTextImportAction) {
+        when (action) {
+            is SharedTextImportAction.AddAsTextBlock -> {
+                showScreen(R.id.navigation_text)
+                val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
+                textFragment?.appendSharedTextBlock(action.text)
+                appendLog("Received shared text and added it as a text block.")
+                Toast.makeText(this, R.string.shared_text_added, Toast.LENGTH_SHORT).show()
+            }
+
+            is SharedTextImportAction.AddAsQrCode -> {
+                showScreen(R.id.navigation_text)
+                val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
+                textFragment?.appendSharedQrPayload(action.payload)
+                appendLog("Received shared text and added it as a QR block.")
+                Toast.makeText(
+                    this,
+                    getString(R.string.shared_qr_added_typed, action.payload.type.displayName),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 
     private fun showSharedImportDialog(model: SharedImportDialogModel) {

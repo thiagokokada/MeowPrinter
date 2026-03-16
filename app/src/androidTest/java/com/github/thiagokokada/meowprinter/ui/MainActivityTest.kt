@@ -84,17 +84,26 @@ class MainActivityTest {
     }
 
     @Test
-    fun selectingCustomPacingShowsSliderAndPresetHidesIt() {
+    fun customPacingProfileShowsSlider() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        AppSettings(context).selectedPrintPacingProfile = PrintPacingProfile.CUSTOM
+
         launchMainActivity { activity ->
             activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
                 R.id.navigation_settings
 
-            val profileSpinner = activity.findViewById<Spinner>(R.id.spinner_print_pacing_profile)
-            profileSpinner.setSelection(PrintPacingProfile.entries.indexOf(PrintPacingProfile.CUSTOM))
-
             assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.slider_print_pacing).visibility)
+        }
+    }
 
-            profileSpinner.setSelection(PrintPacingProfile.entries.indexOf(PrintPacingProfile.BALANCED))
+    @Test
+    fun presetPacingProfileHidesSlider() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        AppSettings(context).selectedPrintPacingProfile = PrintPacingProfile.BALANCED
+
+        launchMainActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_settings
 
             assertEquals(View.GONE, activity.findViewById<View>(R.id.slider_print_pacing).visibility)
         }

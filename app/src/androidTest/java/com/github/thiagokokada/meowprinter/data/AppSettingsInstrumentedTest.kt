@@ -33,7 +33,7 @@ class AppSettingsInstrumentedTest {
 
     @Test
     fun defaultsMatchAppExpectations() {
-        assertEquals(DitheringMode.THRESHOLD, appSettings.selectedDitheringMode)
+        assertEquals(DitheringMode.FLOYD_STEINBERG, appSettings.selectedDitheringMode)
         assertEquals(PrintEnergyProfile.MEDIUM, appSettings.selectedPrintEnergyProfile)
         assertEquals(65, appSettings.selectedCustomPrintEnergyPercent)
         assertEquals(PrintPacingProfile.BALANCED, appSettings.selectedPrintPacingProfile)

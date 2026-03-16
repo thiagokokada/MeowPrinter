@@ -5,13 +5,13 @@ import org.junit.Test
 
 class CanvasTextWeightTest {
     @Test
-    fun fromStoredValueFallsBackToFine() {
-        assertEquals(CanvasTextWeight.FINE, CanvasTextWeight.fromStoredValue(null))
-        assertEquals(CanvasTextWeight.FINE, CanvasTextWeight.fromStoredValue("unknown"))
+    fun fromStoredValueFallsBackToNormal() {
+        assertEquals(CanvasTextWeight.NORMAL, CanvasTextWeight.fromStoredValue(null))
+        assertEquals(CanvasTextWeight.NORMAL, CanvasTextWeight.fromStoredValue("unknown"))
     }
 
     @Test
     fun fromStoredValueReturnsMatchingWeight() {
-        assertEquals(CanvasTextWeight.NORMAL, CanvasTextWeight.fromStoredValue("NORMAL"))
+        assertEquals(CanvasTextWeight.BOLD, CanvasTextWeight.fromStoredValue("BOLD"))
     }
 }

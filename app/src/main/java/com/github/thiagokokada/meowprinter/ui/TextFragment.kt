@@ -459,7 +459,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             alignment = BlockAlignment.LEFT,
             textSize = CanvasTextSize.SP12,
             textFont = CanvasTextFont.SANS_SERIF,
-            textWeight = CanvasTextWeight.FINE
+            textWeight = CanvasTextWeight.NORMAL
         )
 
         contentInput.setText(block.markdown)

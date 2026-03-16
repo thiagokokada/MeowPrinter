@@ -22,7 +22,7 @@ data class CanvasDocument(
                         alignment = BlockAlignment.LEFT,
                         textSize = CanvasTextSize.SP12,
                         textFont = CanvasTextFont.SANS_SERIF,
-                        textWeight = CanvasTextWeight.FINE
+                        textWeight = CanvasTextWeight.NORMAL
                     )
                 )
             )
@@ -41,7 +41,7 @@ data class TextBlock(
     override val alignment: BlockAlignment,
     val textSize: CanvasTextSize,
     val textFont: CanvasTextFont,
-    val textWeight: CanvasTextWeight = CanvasTextWeight.FINE
+    val textWeight: CanvasTextWeight = CanvasTextWeight.NORMAL
 ) : DocumentBlock
 
 data class ImageBlock(

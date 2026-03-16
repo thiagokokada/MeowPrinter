@@ -7,12 +7,12 @@ enum class CanvasTextWeight(
     val typefaceStyle: Int,
     val fakeBold: Boolean
 ) {
-    FINE("Fine", Typeface.NORMAL, false),
-    NORMAL("Normal", Typeface.BOLD, false);
+    NORMAL("Normal", Typeface.NORMAL, false),
+    BOLD("Bold", Typeface.BOLD, false);
 
     companion object {
         fun fromStoredValue(value: String?): CanvasTextWeight {
-            return entries.firstOrNull { it.name == value } ?: FINE
+            return entries.firstOrNull { it.name == value } ?: NORMAL
         }
     }
 }

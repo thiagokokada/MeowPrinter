@@ -9,8 +9,6 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.github.thiagokokada.meowprinter.R
-import com.github.thiagokokada.meowprinter.data.AppSettings
-import com.github.thiagokokada.meowprinter.document.QrBlock
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
@@ -152,7 +150,7 @@ class MainActivityTest {
             textInput.setText("https://example.com")
             dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
 
-            val hasQrBlock = AppSettings(activity).canvasDocumentDraft.blocks.any { it is QrBlock }
+            val hasQrBlock = fragment.hasQrBlockForTest()
             assertEquals(true, hasQrBlock)
         }
     }

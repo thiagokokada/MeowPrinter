@@ -961,6 +961,10 @@ class TextFragment : Fragment(R.layout.fragment_text) {
 
     internal fun qrDialogForTest(): AlertDialog? = qrDialog
 
+    internal fun hasQrBlockForTest(): Boolean {
+        return currentDocument.blocks.any { it is QrBlock }
+    }
+
     private fun confirmStartNewDocument() {
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.text_new_document_title)

@@ -18,7 +18,7 @@ enum class CanvasTextSize(
         get() = "${sp}sp"
 
     val previewSp: Float
-        get() = sp.toFloat()
+        get() = (sp + 2).toFloat()
 
     val printSp: Float
         get() = sp.toFloat()

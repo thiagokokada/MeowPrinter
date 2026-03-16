@@ -195,13 +195,16 @@ class CanvasDocumentRenderer(
         val frame = FrameLayout(context).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
-        val printSizePx = (CatPrinterProtocol.PRINT_WIDTH * block.size.fraction).toInt().coerceAtLeast(64)
-        val displaySizePx = (contentWidthPx * block.size.fraction).toInt().coerceAtLeast(dpToPx(96))
-        val qrBitmap = QrBitmapGenerator.generate(block.payload, printSizePx)
+        val targetSizePx = (contentWidthPx * block.size.fraction).toInt().coerceAtLeast(dpToPx(96))
+        val qrBitmap = runCatching {
+            QrBitmapGenerator.generate(block.payload, targetSizePx)
+        }.getOrElse {
+            return createQrErrorView(frame)
+        }
         val displayedBitmap = if (mode == RenderMode.PRINT) {
             qrBitmap
         } else {
-            PreviewBitmapScaler.scaleForDisplay(qrBitmap, displaySizePx)
+            PreviewBitmapScaler.scaleForDisplay(qrBitmap, targetSizePx)
         }
         frame.addView(
             ImageView(context).apply {
@@ -213,6 +216,22 @@ class CanvasDocumentRenderer(
                 setImageBitmap(displayedBitmap)
                 adjustViewBounds = true
                 scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+        )
+        return frame
+    }
+
+    private fun createQrErrorView(frame: FrameLayout): View {
+        frame.addView(
+            TextView(context).apply {
+                text = context.getString(R.string.qr_unavailable)
+                setTextColor(
+                    MaterialColors.getColor(
+                        context,
+                        com.google.android.material.R.attr.colorOnSurfaceVariant,
+                        Color.BLACK
+                    )
+                )
             }
         )
         return frame

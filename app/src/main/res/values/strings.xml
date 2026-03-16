@@ -86,6 +86,7 @@
     <string name="qr_calendar_location_label">Location</string>
     <string name="qr_calendar_description_label">Description</string>
     <string name="qr_content_required">Enter QR content first.</string>
+    <string name="qr_unavailable">QR code unavailable</string>
     <string name="image_block_dithering_label">Dithering</string>
     <string name="image_block_width_label">Width</string>
     <string name="save">Save</string>

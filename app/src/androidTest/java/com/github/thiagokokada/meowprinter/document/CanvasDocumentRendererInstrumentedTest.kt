@@ -10,6 +10,7 @@ import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -83,6 +84,26 @@ class CanvasDocumentRendererInstrumentedTest {
         assertTrue(previewBitmap.width > 0)
         assertTrue(previewBitmap.height > 0)
         assertTrue(bitmapHasBlackPixels(previewBitmap))
+    }
+
+    @Test
+    fun oversizedQrPayloadDoesNotCrashPreviewRendering() {
+        val document = CanvasDocument(
+            blocks = listOf(
+                QrBlock(
+                    id = "qr-oversized",
+                    payload = TextQrPayload("A".repeat(8_000)),
+                    alignment = BlockAlignment.CENTER,
+                    size = QrBlockSize.SMALL
+                )
+            )
+        )
+
+        val previewBitmap = renderer.renderBitmap(document, 160, CanvasDocumentRenderer.RenderMode.PREVIEW)
+
+        assertNotNull(previewBitmap)
+        assertTrue(previewBitmap.width > 0)
+        assertTrue(previewBitmap.height > 0)
     }
 
     private fun createStripedImageBytes(): ByteArray {

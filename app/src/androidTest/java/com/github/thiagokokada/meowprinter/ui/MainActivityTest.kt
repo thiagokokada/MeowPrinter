@@ -110,6 +110,10 @@ class MainActivityTest {
                 View.VISIBLE,
                 activity.findViewById<View>(R.id.button_add_text_block).visibility
             )
+            assertEquals(
+                View.VISIBLE,
+                activity.findViewById<View>(R.id.button_add_qr_block).visibility
+            )
         }
     }
 

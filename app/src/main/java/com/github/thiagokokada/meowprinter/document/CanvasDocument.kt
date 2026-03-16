@@ -51,3 +51,10 @@ data class ImageBlock(
     val resizerMode: ImageResizerMode = ImageResizerMode.SYSTEM_FILTERED,
     val width: ImageBlockWidth = ImageBlockWidth.FULL
 ) : DocumentBlock
+
+data class QrBlock(
+    override val id: String,
+    val payload: QrPayload,
+    override val alignment: BlockAlignment,
+    val size: QrBlockSize = QrBlockSize.MEDIUM
+) : DocumentBlock

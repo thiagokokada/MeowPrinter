@@ -89,6 +89,7 @@ class CanvasDocumentRenderer(
         return when (block) {
             is TextBlock -> createTextBlockView(block, contentWidthPx, mode)
             is ImageBlock -> createImageBlockView(block, contentWidthPx)
+            is QrBlock -> createQrBlockView(block, contentWidthPx, mode)
         }
     }
 
@@ -186,6 +187,37 @@ class CanvasDocumentRenderer(
         return frame
     }
 
+    private fun createQrBlockView(
+        block: QrBlock,
+        contentWidthPx: Int,
+        mode: RenderMode
+    ): View {
+        val frame = FrameLayout(context).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        val printSizePx = (CatPrinterProtocol.PRINT_WIDTH * block.size.fraction).toInt().coerceAtLeast(64)
+        val displaySizePx = (contentWidthPx * block.size.fraction).toInt().coerceAtLeast(dpToPx(96))
+        val qrBitmap = QrBitmapGenerator.generate(block.payload, printSizePx)
+        val displayedBitmap = if (mode == RenderMode.PRINT) {
+            qrBitmap
+        } else {
+            PreviewBitmapScaler.scaleForDisplay(qrBitmap, displaySizePx)
+        }
+        frame.addView(
+            ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    displayedBitmap.width,
+                    displayedBitmap.height,
+                    block.alignment.toLayoutGravity()
+                )
+                setImageBitmap(displayedBitmap)
+                adjustViewBounds = true
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+        )
+        return frame
+    }
+
     private fun decodeBitmap(imageUri: String, targetWidthPx: Int, resizerMode: ImageResizerMode): Bitmap? {
         return runCatching {
             val source = ImageDecoder.createSource(contentResolver, imageUri.toUri())
@@ -225,6 +257,10 @@ class CanvasDocumentRenderer(
                 heightPx
             )
         }
+    }
+
+    private fun dpToPx(value: Int): Int {
+        return (value * context.resources.displayMetrics.density).toInt()
     }
 
     enum class RenderMode {

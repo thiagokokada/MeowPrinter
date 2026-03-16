@@ -10,6 +10,7 @@ import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,6 +65,26 @@ class CanvasDocumentRendererInstrumentedTest {
         assertFalse(bitmapsEqual(areaAverageBitmap, nearestNeighborBitmap))
     }
 
+    @Test
+    fun qrBlockRendersVisibleBitmap() {
+        val document = CanvasDocument(
+            blocks = listOf(
+                QrBlock(
+                    id = "qr-1",
+                    payload = UrlQrPayload("https://example.com"),
+                    alignment = BlockAlignment.CENTER,
+                    size = QrBlockSize.MEDIUM
+                )
+            )
+        )
+
+        val previewBitmap = renderer.renderBitmap(document, 240, CanvasDocumentRenderer.RenderMode.PREVIEW)
+
+        assertTrue(previewBitmap.width > 0)
+        assertTrue(previewBitmap.height > 0)
+        assertTrue(bitmapHasBlackPixels(previewBitmap))
+    }
+
     private fun createStripedImageBytes(): ByteArray {
         val bitmap = Bitmap.createBitmap(768, 384, Bitmap.Config.ARGB_8888).apply {
             for (y in 0 until height) {
@@ -94,5 +115,11 @@ class CanvasDocumentRendererInstrumentedTest {
         first.getPixels(firstPixels, 0, first.width, 0, 0, first.width, first.height)
         second.getPixels(secondPixels, 0, second.width, 0, 0, second.width, second.height)
         return firstPixels.contentEquals(secondPixels)
+    }
+
+    private fun bitmapHasBlackPixels(bitmap: Bitmap): Boolean {
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        return pixels.any { it == Color.BLACK }
     }
 }

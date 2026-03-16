@@ -16,6 +16,7 @@ nordicBle = "2.11.0"
 androidImageCropper = "4.7.0"
 markwon = "4.6.2"
 iconics = "5.5.0"
+zxing = "3.5.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,7 @@ android-image-cropper = { group = "com.vanniktech", name = "android-image-croppe
 markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
 markwon-ext-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markwon" }
 iconics-core = { group = "com.mikepenz", name = "iconics-core", version.ref = "iconics" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

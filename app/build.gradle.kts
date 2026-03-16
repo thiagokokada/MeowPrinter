@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.markwon.core)
     implementation(libs.markwon.ext.tables)
     implementation(libs.iconics.core)
+    implementation(libs.zxing.core)
     implementation("com.mikepenz:fontawesome-typeface:5.13.3.2-kotlin@aar")
     testImplementation(libs.junit)
     testImplementation(libs.androidx.test.core)

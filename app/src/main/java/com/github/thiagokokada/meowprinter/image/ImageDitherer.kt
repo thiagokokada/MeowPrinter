@@ -15,7 +15,8 @@ object ImageDitherers {
         ThresholdImageDitherer,
         FloydSteinbergImageDitherer,
         AtkinsonImageDitherer,
-        Ordered4x4ImageDitherer
+        Ordered4x4ImageDitherer,
+        OrderedBayer8x8ImageDitherer
     )
 
     fun forMode(mode: DitheringMode): ImageDitherer {
@@ -104,6 +105,27 @@ object Ordered4x4ImageDitherer : ImageDitherer {
         )
         return buildRows(width, height) { x, y ->
             val threshold = ((matrix[y % 4][x % 4] + 0.5f) / 16f) * 255f
+            grayscale[(y * width) + x] < threshold
+        }
+    }
+}
+
+object OrderedBayer8x8ImageDitherer : ImageDitherer {
+    override val mode = DitheringMode.ORDERED_BAYER_8X8
+
+    override fun rowsFor(grayscale: FloatArray, width: Int, height: Int): List<BooleanArray> {
+        val matrix = arrayOf(
+            intArrayOf(0, 48, 12, 60, 3, 51, 15, 63),
+            intArrayOf(32, 16, 44, 28, 35, 19, 47, 31),
+            intArrayOf(8, 56, 4, 52, 11, 59, 7, 55),
+            intArrayOf(40, 24, 36, 20, 43, 27, 39, 23),
+            intArrayOf(2, 50, 14, 62, 1, 49, 13, 61),
+            intArrayOf(34, 18, 46, 30, 33, 17, 45, 29),
+            intArrayOf(10, 58, 6, 54, 9, 57, 5, 53),
+            intArrayOf(42, 26, 38, 22, 41, 25, 37, 21)
+        )
+        return buildRows(width, height) { x, y ->
+            val threshold = ((matrix[y % 8][x % 8] + 0.5f) / 64f) * 255f
             grayscale[(y * width) + x] < threshold
         }
     }

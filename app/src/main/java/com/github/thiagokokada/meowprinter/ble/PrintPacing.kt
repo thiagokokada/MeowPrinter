@@ -9,12 +9,12 @@ data class PrintPacing(
     companion object {
         fun fromPercent(percent: Int): PrintPacing {
             val clampedPercent = percent.coerceIn(0, 100)
-            val fraction = 1f - (clampedPercent / 100f)
+            val fraction = clampedPercent / 100f
             return PrintPacing(
-                controlCommandDelayMs = lerp(4, 14, fraction),
-                rowCommandDelayMs = lerp(4, 14, fraction),
-                rowCommandExtraPauseEvery = lerp(36, 20, fraction).toInt().coerceAtLeast(1),
-                rowCommandExtraPauseMs = lerp(30, 120, fraction)
+                controlCommandDelayMs = lerp(14, 0, fraction),
+                rowCommandDelayMs = lerp(14, 0, fraction),
+                rowCommandExtraPauseEvery = lerp(20, 56, fraction).toInt().coerceAtLeast(1),
+                rowCommandExtraPauseMs = lerp(120, 0, fraction)
             )
         }
 

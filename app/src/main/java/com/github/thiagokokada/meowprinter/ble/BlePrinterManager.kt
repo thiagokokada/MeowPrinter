@@ -69,7 +69,7 @@ class BlePrinterManager(
 
     suspend fun printCommands(
         commands: List<ByteArray>,
-        pacing: PrintPacing = PrintPacing.fromPercent(60)
+        pacing: PrintPacing = PrintPacingProfile.BALANCED.toPacing(100)
     ) {
         readySignal = CompletableDeferred()
         commands.forEachIndexed { index, command ->

@@ -115,9 +115,13 @@
     <string name="energy_label">Print energy</string>
     <string name="energy_subtitle">Controls how strong the thermal print is. Lower is lighter, higher is darker.</string>
     <string name="energy_value">%1$d%%</string>
-    <string name="print_pacing_label">Print pacing</string>
-    <string name="print_pacing_subtitle">Higher values print faster. Lower values slow large prints down to improve reliability.</string>
-    <string name="print_pacing_value">%1$d%%</string>
+    <string name="print_pacing_label">Print speed</string>
+    <string name="print_pacing_subtitle">Fast prints quicker, Balanced is a good default, and Safe slows long prints down to improve reliability on flaky printers.</string>
+    <string name="print_pacing_fast">Fast</string>
+    <string name="print_pacing_balanced">Balanced</string>
+    <string name="print_pacing_safe">Safe</string>
+    <string name="print_pacing_custom">Custom</string>
+    <string name="print_pacing_custom_value">%1$d%%</string>
     <string name="paper_move_steps_label">Paper movement steps</string>
     <string name="paper_move_steps_subtitle">Controls how far the manual Advance paper and Retract paper actions move the paper, and the main feed amount after a print job finishes.</string>
     <string name="paper_move_steps_field_label">Steps</string>

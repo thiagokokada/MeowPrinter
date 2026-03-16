@@ -23,6 +23,7 @@ import com.github.thiagokokada.meowprinter.ble.BlePrinterManager
 import com.github.thiagokokada.meowprinter.ble.BlePrinterScanner
 import com.github.thiagokokada.meowprinter.ble.DiscoveredPrinter
 import com.github.thiagokokada.meowprinter.ble.PrintPacing
+import com.github.thiagokokada.meowprinter.ble.PrintPacingProfile
 import com.github.thiagokokada.meowprinter.data.AppSettings
 import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
@@ -49,6 +50,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var scanner: BlePrinterScanner
     private lateinit var appSettings: AppSettings
     private lateinit var printerAdapter: ArrayAdapter<String>
+    private lateinit var printPacingProfileAdapter: ArrayAdapter<String>
+    private lateinit var endPaperPassesAdapter: ArrayAdapter<String>
 
     private var printerManager: BlePrinterManager? = null
     private var connectedPrinterName: String? = null
@@ -258,6 +261,40 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             selectedScannedPrinterIndex = position
             render()
         }
+        printPacingProfileAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            PrintPacingProfile.entries.map { it.displayName }
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        settingsSection.spinnerPrintPacingProfile.adapter = printPacingProfileAdapter
+        settingsSection.spinnerPrintPacingProfile.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            val selectedProfile = PrintPacingProfile.entries[position]
+            if (appSettings.selectedPrintPacingProfile != selectedProfile) {
+                appSettings.selectedPrintPacingProfile = selectedProfile
+                render()
+            }
+        }
+        endPaperPassesAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listOf(
+                getString(R.string.end_paper_passes_0),
+                getString(R.string.end_paper_passes_1),
+                getString(R.string.end_paper_passes_2),
+                getString(R.string.end_paper_passes_3)
+            )
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        settingsSection.spinnerEndPaperPasses.adapter = endPaperPassesAdapter
+        settingsSection.spinnerEndPaperPasses.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            if (appSettings.selectedEndPaperPasses != position) {
+                appSettings.selectedEndPaperPasses = position
+                render()
+            }
+        }
         settingsSection.sliderEnergy.addOnChangeListener { _, value, fromUser ->
             if (!fromUser || ignoreEnergySliderCallback) {
                 return@addOnChangeListener
@@ -269,7 +306,10 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             if (!fromUser || ignorePacingSliderCallback) {
                 return@addOnChangeListener
             }
-            appSettings.selectedPrintPacingPercent = value.toInt()
+            appSettings.selectedCustomPrintPacingPercent = value.toInt()
+            if (appSettings.selectedPrintPacingProfile != PrintPacingProfile.CUSTOM) {
+                appSettings.selectedPrintPacingProfile = PrintPacingProfile.CUSTOM
+            }
             render()
         }
         settingsSection.inputPaperMoveSteps.setOnEditorActionListener { _, actionId, _ ->
@@ -289,10 +329,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         settingsSection.buttonPaperSteps25.setOnClickListener { updatePaperMoveSteps(25) }
         settingsSection.buttonPaperSteps50.setOnClickListener { updatePaperMoveSteps(50) }
         settingsSection.buttonPaperSteps100.setOnClickListener { updatePaperMoveSteps(100) }
-        settingsSection.buttonEndPaperPasses0.setOnClickListener { updateEndPaperPasses(0) }
-        settingsSection.buttonEndPaperPasses1.setOnClickListener { updateEndPaperPasses(1) }
-        settingsSection.buttonEndPaperPasses2.setOnClickListener { updateEndPaperPasses(2) }
-        settingsSection.buttonEndPaperPasses3.setOnClickListener { updateEndPaperPasses(3) }
         imageSection.buttonPickImage.setOnClickListener {
             imagePickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -1059,10 +1095,19 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         ignoreEnergySliderCallback = true
         settingsSection.sliderEnergy.value = PrintEnergy.toPercent(appSettings.selectedPrintEnergy).toFloat()
         ignoreEnergySliderCallback = false
-        val pacingPercent = appSettings.selectedPrintPacingPercent
-        settingsSection.printPacingValue.text = formatPrintPacing(pacingPercent)
+        val pacingProfile = appSettings.selectedPrintPacingProfile
+        settingsSection.spinnerPrintPacingProfile.setSelection(
+            PrintPacingProfile.entries.indexOf(pacingProfile),
+            false
+        )
+        settingsSection.printPacingCustomValue.isVisible = pacingProfile == PrintPacingProfile.CUSTOM
+        settingsSection.sliderPrintPacing.isVisible = pacingProfile == PrintPacingProfile.CUSTOM
+        settingsSection.printPacingCustomValue.text = getString(
+            R.string.print_pacing_custom_value,
+            appSettings.selectedCustomPrintPacingPercent
+        )
         ignorePacingSliderCallback = true
-        settingsSection.sliderPrintPacing.value = pacingPercent.toFloat()
+        settingsSection.sliderPrintPacing.value = appSettings.selectedCustomPrintPacingPercent.toFloat()
         ignorePacingSliderCallback = false
         val paperMoveSteps = appSettings.selectedPaperMoveSteps
         val paperMoveStepsText = paperMoveSteps.toString()
@@ -1073,7 +1118,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             ignorePaperMoveFieldCallback = false
         }
         settingsSection.inputLayoutPaperMoveSteps.error = null
-        settingsSection.endPaperPassesValue.text = getString(R.string.end_paper_passes_value, appSettings.selectedEndPaperPasses)
+        settingsSection.spinnerEndPaperPasses.setSelection(appSettings.selectedEndPaperPasses, false)
         settingsSection.buttonScanPrinters.isEnabled = !isBusy
         settingsSection.buttonSavePrinter.isEnabled = selectedPrinter != null && !isBusy
         settingsSection.buttonTestPrint.isEnabled = appSettings.selectedPrinterAddress != null && !isBusy
@@ -1137,10 +1182,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         return getString(R.string.energy_value, percent)
     }
 
-    private fun formatPrintPacing(percent: Int): String {
-        return getString(R.string.print_pacing_value, percent)
-    }
-
     private fun commitPaperMoveStepsFromInput() {
         if (ignorePaperMoveFieldCallback) {
             return
@@ -1160,13 +1201,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         render()
     }
 
-    private fun updateEndPaperPasses(passes: Int) {
-        appSettings.selectedEndPaperPasses = passes
-        render()
-    }
-
     private fun currentPrintPacing(): PrintPacing {
-        return PrintPacing.fromPercent(appSettings.selectedPrintPacingPercent)
+        return appSettings.selectedPrintPacingProfile.toPacing(appSettings.selectedCustomPrintPacingPercent)
     }
 
     private fun hasBlePermissions(): Boolean {

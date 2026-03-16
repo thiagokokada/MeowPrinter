@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Meow Printer</string>
     <string name="main_screen_title">Image Print</string>
     <string name="main_screen_subtitle">Pick an image, preview it with the selected dithering method, and print it to the saved printer.</string>
@@ -95,10 +95,10 @@
     <string name="share_text_title">Import shared text</string>
     <string name="share_text_message">Choose whether to add the shared content as a text block or as a QR code.</string>
     <string name="share_text_add_text_block">Add as Text block</string>
-    <string name="share_text_add_qr_typed">Add as %1$s QR code</string>
+    <string name="share_text_add_qr_typed">Add as <xliff:g id="qr_type">%1$s</xliff:g> QR code</string>
     <string name="shared_text_added">Added shared content as a Text block</string>
     <string name="shared_image_added_to_compose">Added shared image to Compose</string>
-    <string name="shared_qr_added_typed">Added shared content as a %1$s QR code</string>
+    <string name="shared_qr_added_typed">Added shared content as a <xliff:g id="qr_type">%1$s</xliff:g> QR code</string>
     <string name="image_block_dithering_label">Dithering</string>
     <string name="image_block_width_label">Width</string>
     <string name="save">Save</string>

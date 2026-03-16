@@ -856,7 +856,9 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 render()
             }
         }
-        PrintNotificationManager.show(applicationContext)
+        if (hasNotificationPermission()) {
+            PrintNotificationManager.show(applicationContext)
+        }
     }
 
     private fun endActivePrint() {

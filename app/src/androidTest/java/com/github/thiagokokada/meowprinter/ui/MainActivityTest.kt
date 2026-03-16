@@ -29,11 +29,32 @@ class MainActivityTest {
         scenario?.close()
     }
 
+    private fun launchMainActivity(block: (MainActivity) -> Unit) {
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+        scenario?.onActivity(block)
+    }
+
+    private fun injectSharedText(activity: MainActivity, sharedText: String) {
+        activity.handleIntentForTest(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, sharedText)
+            }
+        )
+    }
+
+    private fun injectSharedImage(activity: MainActivity, sharedImageUri: Uri) {
+        activity.handleIntentForTest(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, sharedImageUri)
+            }
+        )
+    }
+
     @Test
     fun openingSettingsShowsSavedPrinterCard() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
+        launchMainActivity { activity ->
             activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
                 R.id.navigation_settings
 
@@ -50,9 +71,7 @@ class MainActivityTest {
 
     @Test
     fun launchShowsImageScreenByDefault() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
+        launchMainActivity { activity ->
             assertEquals(
                 View.VISIBLE,
                 activity.findViewById<View>(R.id.image_scroll).visibility
@@ -70,15 +89,8 @@ class MainActivityTest {
 
     @Test
     fun sharedTextShowsImportChooser() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
-            activity.handleIntentForTest(
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "https://example.com")
-                }
-            )
+        launchMainActivity { activity ->
+            injectSharedText(activity, "https://example.com")
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
             assertEquals(true, dialog.isShowing)
@@ -92,15 +104,8 @@ class MainActivityTest {
     @Test
     fun sharedTextCanBeAddedAsTextBlock() {
         val sharedText = "Imported shared text"
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
-            activity.handleIntentForTest(
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, sharedText)
-                }
-            )
+        launchMainActivity { activity ->
+            injectSharedText(activity, sharedText)
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
             activity.importSharedTextAsTextBlockForTest(sharedText)
@@ -112,15 +117,8 @@ class MainActivityTest {
 
     @Test
     fun sharedTextCanBeAddedAsQrBlock() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
-            activity.handleIntentForTest(
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "https://example.com")
-                }
-            )
+        launchMainActivity { activity ->
+            injectSharedText(activity, "https://example.com")
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
             activity.importSharedTextAsQrBlockForTest("https://example.com")
@@ -132,15 +130,8 @@ class MainActivityTest {
 
     @Test
     fun sharedImageShowsImportChooser() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
-            activity.handleIntentForTest(
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "image/png"
-                    putExtra(Intent.EXTRA_STREAM, Uri.parse("content://com.github.thiagokokada.meowprinter.test/shared-image"))
-                }
-            )
+        launchMainActivity { activity ->
+            injectSharedImage(activity, Uri.parse("content://com.github.thiagokokada.meowprinter.test/shared-image"))
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
             assertEquals(true, dialog.isShowing)
@@ -178,9 +169,7 @@ class MainActivityTest {
 
     @Test
     fun openingTextShowsComposerFragment() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
+        launchMainActivity { activity ->
             activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
                 R.id.navigation_text
 
@@ -205,9 +194,7 @@ class MainActivityTest {
 
     @Test
     fun previewDocumentShowsComposePreviewDialog() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
+        launchMainActivity { activity ->
             activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
                 R.id.navigation_text
             activity.findViewById<View>(R.id.button_preview_document).performClick()
@@ -219,9 +206,7 @@ class MainActivityTest {
 
     @Test
     fun addQrBlockCreatesComposeBlock() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
-        scenario?.onActivity { activity ->
+        launchMainActivity { activity ->
             activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
                 R.id.navigation_text
             val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment

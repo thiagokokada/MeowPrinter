@@ -26,7 +26,7 @@ import com.github.thiagokokada.meowprinter.ble.PrintPacing
 import com.github.thiagokokada.meowprinter.data.AppSettings
 import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
-import com.github.thiagokokada.meowprinter.document.SharedQrPayloadParser
+import com.github.thiagokokada.meowprinter.document.SharedTextImportSuggester
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
@@ -48,9 +48,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var binding: ActivityMainBinding
     private lateinit var scanner: BlePrinterScanner
     private lateinit var appSettings: AppSettings
-    private lateinit var ditheringAdapter: ArrayAdapter<String>
-    private lateinit var imageProcessingAdapter: ArrayAdapter<String>
-    private lateinit var imageResizerAdapter: ArrayAdapter<String>
     private lateinit var printerAdapter: ArrayAdapter<String>
 
     private var printerManager: BlePrinterManager? = null
@@ -179,7 +176,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.appTitle.text = getString(R.string.app_name)
         binding.toolbar.setNavigationOnClickListener(null)
 
-        ditheringAdapter = ArrayAdapter(
+        val ditheringAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
             DitheringMode.entries.map { it.displayName }
@@ -201,7 +198,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 }
             }
         }
-        imageProcessingAdapter = ArrayAdapter(
+        val imageProcessingAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
             ImageProcessingMode.entries.map { it.displayName }
@@ -223,7 +220,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 }
             }
         }
-        imageResizerAdapter = ArrayAdapter(
+        val imageResizerAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
             ImageResizerMode.entries.map { it.displayName }
@@ -628,7 +625,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     internal fun importSharedTextAsQrBlockForTest(sharedText: String) {
-        val payload = SharedQrPayloadParser.parse(sharedText)
+        val payload = SharedTextImportSuggester.suggest(sharedText).qrPayload
         showScreen(R.id.navigation_text)
         val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
         textFragment?.appendSharedQrPayload(payload)
@@ -894,91 +891,111 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             }
 
             Intent.ACTION_SEND -> {
-                val sharedImageUri = extractSharedImageUri(intent)
-                if (sharedImageUri != null) {
-                    showSharedImageImportDialog(sharedImageUri)
-                } else {
-                    val sharedText = extractSharedText(intent)
-                    if (!sharedText.isNullOrBlank()) {
-                        showSharedTextImportDialog(sharedText)
-                    } else {
-                        appendLog("Ignored share intent without an image or text.")
-                    }
+                when (val request = parseSharedImportRequest(intent)) {
+                    is SharedImportRequest.Image -> showSharedImageImportDialog(request.uri)
+                    is SharedImportRequest.Text -> showSharedTextImportDialog(request.value)
+                    SharedImportRequest.None -> appendLog("Ignored share intent without an image or text.")
                 }
                 intent.action = null
             }
         }
     }
 
-    private fun extractSharedImageUri(intent: Intent): Uri? {
-        val isImageShare = intent.type?.startsWith("image/") == true
-        if (!isImageShare) {
-            return null
-        }
-        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)?.let { return it }
-        return intent.clipData
+    private fun parseSharedImportRequest(intent: Intent): SharedImportRequest {
+        val clipDataText = intent.clipData
             ?.takeIf { it.itemCount > 0 }
             ?.getItemAt(0)
-            ?.uri
-    }
-
-    private fun extractSharedText(intent: Intent): String? {
-        val isTextShare = intent.type?.startsWith("text/") == true
-        if (!isTextShare) {
-            return null
-        }
-        return intent.getStringExtra(Intent.EXTRA_TEXT)
-            ?: intent.clipData
-                ?.takeIf { it.itemCount > 0 }
-                ?.getItemAt(0)
-                ?.coerceToText(this)
-                ?.toString()
+            ?.coerceToText(this)
+            ?.toString()
+        return SharedImportRequestParser.parse(intent, clipDataText)
     }
 
     private fun showSharedImageImportDialog(sharedImageUri: Uri) {
-        shareImportDialog?.dismiss()
-        shareImportDialog = AlertDialog.Builder(this)
-            .setTitle(R.string.share_image_title)
-            .setMessage(R.string.share_image_message)
-            .setPositiveButton(R.string.share_image_print) { _, _ ->
-                showScreen(R.id.navigation_image)
-                appendLog("Received shared image for Image Print.")
-                launchImageEditor(sharedImageUri)
-            }
-            .setNegativeButton(R.string.share_image_compose) { _, _ ->
-                showScreen(R.id.navigation_text)
-                val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
-                textFragment?.appendSharedImage(sharedImageUri)
-                appendLog("Received shared image and added it to Compose.")
-                Toast.makeText(this, R.string.shared_image_added_to_compose, Toast.LENGTH_SHORT).show()
-            }
-            .setNeutralButton(android.R.string.cancel, null)
-            .show()
+        showSharedImportDialog(
+            SharedImportDialogModel(
+                titleRes = R.string.share_image_title,
+                messageRes = R.string.share_image_message,
+                positiveAction = SharedImportDialogAction(getText(R.string.share_image_print)) {
+                    performSharedImageImportAction(SharedImageImportAction.AddToImagePrint(sharedImageUri))
+                },
+                negativeAction = SharedImportDialogAction(getText(R.string.share_image_compose)) {
+                    performSharedImageImportAction(SharedImageImportAction.AddToCompose(sharedImageUri))
+                }
+            )
+        )
     }
 
     private fun showSharedTextImportDialog(sharedText: String) {
-        val payload = SharedQrPayloadParser.parse(sharedText)
-        shareImportDialog?.dismiss()
-        shareImportDialog = AlertDialog.Builder(this)
-            .setTitle(R.string.share_text_title)
-            .setMessage(R.string.share_text_message)
-            .setPositiveButton(R.string.share_text_add_text_block) { _, _ ->
+        val suggestion = SharedTextImportSuggester.suggest(sharedText)
+        val payload = suggestion.qrPayload
+        showSharedImportDialog(
+            SharedImportDialogModel(
+                titleRes = R.string.share_text_title,
+                messageRes = R.string.share_text_message,
+                positiveAction = SharedImportDialogAction(getText(R.string.share_text_add_text_block)) {
+                    performSharedTextImportAction(SharedTextImportAction.AddAsTextBlock(sharedText))
+                },
+                negativeAction = SharedImportDialogAction(
+                    getString(R.string.share_text_add_qr_typed, payload.type.displayName)
+                ) {
+                    performSharedTextImportAction(SharedTextImportAction.AddAsQrCode(payload))
+                }
+            )
+        )
+    }
+
+    private fun performSharedImageImportAction(action: SharedImageImportAction) {
+        when (action) {
+            is SharedImageImportAction.AddToImagePrint -> {
+                showScreen(R.id.navigation_image)
+                appendLog("Received shared image for Image Print.")
+                launchImageEditor(action.uri)
+            }
+
+            is SharedImageImportAction.AddToCompose -> {
                 showScreen(R.id.navigation_text)
                 val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
-                textFragment?.appendSharedTextBlock(sharedText)
+                textFragment?.appendSharedImage(action.uri)
+                appendLog("Received shared image and added it to Compose.")
+                Toast.makeText(this, R.string.shared_image_added_to_compose, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun performSharedTextImportAction(action: SharedTextImportAction) {
+        when (action) {
+            is SharedTextImportAction.AddAsTextBlock -> {
+                showScreen(R.id.navigation_text)
+                val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
+                textFragment?.appendSharedTextBlock(action.text)
                 appendLog("Received shared text and added it as a text block.")
                 Toast.makeText(this, R.string.shared_text_added, Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton(getString(R.string.share_text_add_qr_typed, payload.type.displayName)) { _, _ ->
+
+            is SharedTextImportAction.AddAsQrCode -> {
                 showScreen(R.id.navigation_text)
                 val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
-                textFragment?.appendSharedQrPayload(payload)
+                textFragment?.appendSharedQrPayload(action.payload)
                 appendLog("Received shared text and added it as a QR block.")
                 Toast.makeText(
                     this,
-                    getString(R.string.shared_qr_added_typed, payload.type.displayName),
+                    getString(R.string.shared_qr_added_typed, action.payload.type.displayName),
                     Toast.LENGTH_SHORT
                 ).show()
+            }
+        }
+    }
+
+    private fun showSharedImportDialog(model: SharedImportDialogModel) {
+        shareImportDialog?.dismiss()
+        shareImportDialog = AlertDialog.Builder(this)
+            .setTitle(model.titleRes)
+            .setMessage(model.messageRes)
+            .setPositiveButton(model.positiveAction.label) { _, _ ->
+                model.positiveAction.onSelected()
+            }
+            .setNegativeButton(model.negativeAction.label) { _, _ ->
+                model.negativeAction.onSelected()
             }
             .setNeutralButton(android.R.string.cancel, null)
             .show()

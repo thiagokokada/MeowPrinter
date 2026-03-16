@@ -225,24 +225,26 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     fun appendSharedQrPayload(payload: QrPayload) {
-        val block = QrBlock(
-            id = UUID.randomUUID().toString(),
-            payload = payload,
-            alignment = BlockAlignment.CENTER,
-            size = QrBlockSize.MEDIUM
+        appendBlock(
+            QrBlock(
+                id = UUID.randomUUID().toString(),
+                payload = payload,
+                alignment = BlockAlignment.CENTER,
+                size = QrBlockSize.MEDIUM
+            )
         )
-        updateDocument(CanvasDocumentEditor.appendBlock(currentDocument, block))
     }
 
     fun appendSharedTextBlock(markdown: String) {
-        val block = TextBlock(
-            id = UUID.randomUUID().toString(),
-            markdown = markdown,
-            alignment = BlockAlignment.LEFT,
-            textSize = CanvasTextSize.SP12,
-            textFont = CanvasTextFont.SANS_SERIF
+        appendBlock(
+            TextBlock(
+                id = UUID.randomUUID().toString(),
+                markdown = markdown,
+                alignment = BlockAlignment.LEFT,
+                textSize = CanvasTextSize.SP12,
+                textFont = CanvasTextFont.SANS_SERIF
+            )
         )
-        updateDocument(CanvasDocumentEditor.appendBlock(currentDocument, block))
     }
 
     fun appendSharedImage(sourceUri: Uri) {
@@ -388,16 +390,16 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 }
             })
             addView(iconActionButton(FontAwesome.Icon.faw_clone, R.string.duplicate) {
-                updateDocument(CanvasDocumentEditor.duplicateBlock(currentDocument, block.id))
+                mutateDocument { CanvasDocumentEditor.duplicateBlock(it, block.id) }
             })
             addView(iconActionButton(FontAwesome.Icon.faw_arrow_up, R.string.move_up) {
-                updateDocument(CanvasDocumentEditor.moveBlock(currentDocument, block.id, -1))
+                mutateDocument { CanvasDocumentEditor.moveBlock(it, block.id, -1) }
             })
             addView(iconActionButton(FontAwesome.Icon.faw_arrow_down, R.string.move_down) {
-                updateDocument(CanvasDocumentEditor.moveBlock(currentDocument, block.id, 1))
+                mutateDocument { CanvasDocumentEditor.moveBlock(it, block.id, 1) }
             })
             addView(iconActionButton(FontAwesome.Icon.faw_trash_alt, R.string.delete) {
-                updateDocument(CanvasDocumentEditor.removeBlock(currentDocument, block.id))
+                mutateDocument { CanvasDocumentEditor.removeBlock(it, block.id) }
             })
         }
     }
@@ -475,13 +477,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                     textSize = CanvasTextSize.entries[sizeSpinner.selectedItemPosition],
                     textFont = CanvasTextFont.entries[fontSpinner.selectedItemPosition]
                 )
-                updateDocument(
-                    if (existingBlock == null) {
-                        CanvasDocumentEditor.appendBlock(currentDocument, updatedBlock)
-                    } else {
-                        CanvasDocumentEditor.replaceBlock(currentDocument, updatedBlock)
-                    }
-                )
+                upsertBlock(updatedBlock, existingBlock == null)
             }
             .show()
     }
@@ -626,16 +622,13 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 startImageInsert()
             }
             .setPositiveButton(R.string.save) { _, _ ->
-                updateDocument(
-                    CanvasDocumentEditor.replaceBlock(
-                        currentDocument,
-                        block.copy(
-                            alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
-                            ditheringMode = DitheringMode.entries[ditheringSpinner.selectedItemPosition],
-                            processingMode = ImageProcessingMode.entries[processingSpinner.selectedItemPosition],
-                            resizerMode = ImageResizerMode.entries[resizerSpinner.selectedItemPosition],
-                            width = ImageBlockWidth.entries[widthSpinner.selectedItemPosition]
-                        )
+                replaceBlock(
+                    block.copy(
+                        alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
+                        ditheringMode = DitheringMode.entries[ditheringSpinner.selectedItemPosition],
+                        processingMode = ImageProcessingMode.entries[processingSpinner.selectedItemPosition],
+                        resizerMode = ImageResizerMode.entries[resizerSpinner.selectedItemPosition],
+                        width = ImageBlockWidth.entries[widthSpinner.selectedItemPosition]
                     )
                 )
             }
@@ -843,13 +836,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                     alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
                     size = QrBlockSize.entries[sizeSpinner.selectedItemPosition]
                 )
-                updateDocument(
-                    if (existingBlock == null) {
-                        CanvasDocumentEditor.appendBlock(currentDocument, updatedBlock)
-                    } else {
-                        CanvasDocumentEditor.replaceBlock(currentDocument, updatedBlock)
-                    }
-                )
+                upsertBlock(updatedBlock, existingBlock == null)
                 dialog.dismiss()
             }
         }
@@ -895,8 +882,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             resizerMode = appSettings.selectedImageResizerMode
         )
 
-        val updatedDocument = if (existingBlockId == null) {
-            CanvasDocumentEditor.appendBlock(currentDocument, newBlock)
+        if (existingBlockId == null) {
+            appendBlock(newBlock)
         } else {
             val existingImageBlock = currentDocument.blocks
                 .filterIsInstance<ImageBlock>()
@@ -908,8 +895,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                         .count { it.imageUri == block.imageUri } == 1
                 }
                 ?.let { documentImageStore.deleteManagedImage(it.imageUri) }
-            CanvasDocumentEditor.replaceBlock(
-                currentDocument,
+            replaceBlock(
                 newBlock.copy(
                     alignment = existingImageBlock?.alignment ?: BlockAlignment.CENTER,
                     ditheringMode = existingImageBlock?.ditheringMode ?: DitheringMode.FLOYD_STEINBERG,
@@ -919,7 +905,6 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 )
             )
         }
-        updateDocument(updatedDocument)
         appendLog("Prepared document image block from $editedUri.")
     }
 
@@ -1002,13 +987,14 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     internal fun appendQrBlockForTest(payload: QrPayload) {
-        val block = QrBlock(
-            id = UUID.randomUUID().toString(),
-            payload = payload,
-            alignment = BlockAlignment.CENTER,
-            size = QrBlockSize.MEDIUM
+        appendBlock(
+            QrBlock(
+                id = UUID.randomUUID().toString(),
+                payload = payload,
+                alignment = BlockAlignment.CENTER,
+                size = QrBlockSize.MEDIUM
+            )
         )
-        updateDocument(CanvasDocumentEditor.appendBlock(currentDocument, block))
     }
 
     private fun confirmStartNewDocument() {
@@ -1100,6 +1086,26 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         currentDocument = updatedDocument
         appSettings.canvasDocumentDraft = updatedDocument
         renderDocument()
+    }
+
+    private fun mutateDocument(transform: (CanvasDocument) -> CanvasDocument) {
+        updateDocument(transform(currentDocument))
+    }
+
+    private fun appendBlock(block: DocumentBlock) {
+        mutateDocument { CanvasDocumentEditor.appendBlock(it, block) }
+    }
+
+    private fun replaceBlock(block: DocumentBlock) {
+        mutateDocument { CanvasDocumentEditor.replaceBlock(it, block) }
+    }
+
+    private fun upsertBlock(block: DocumentBlock, append: Boolean) {
+        if (append) {
+            appendBlock(block)
+        } else {
+            replaceBlock(block)
+        }
     }
 
     private fun setupSpinner(spinner: Spinner, values: List<String>, selectedIndex: Int) {

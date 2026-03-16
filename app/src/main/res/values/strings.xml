@@ -6,7 +6,7 @@
     <string name="settings_subtitle">Scan for compatible printers nearby and save the one you want to use.</string>
     <string name="select_printer_title">Select printer</string>
     <string name="printer_settings_section_title">Printer settings</string>
-    <string name="printer_settings_section_subtitle">Tune print behavior, test the saved printer, and control paper movement.</string>
+    <string name="printer_settings_section_subtitle">Tune print behavior and control paper movement.</string>
     <string name="diagnostics_title">Diagnostics</string>
     <string name="diagnostics_subtitle">Inspect recent Bluetooth, scan, and print events if you need to troubleshoot printer behavior.</string>
     <string name="nav_image">Image</string>

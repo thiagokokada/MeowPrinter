@@ -253,13 +253,55 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     }
 
     private fun blockContentView(block: DocumentBlock, widthPx: Int): View {
-        return documentRenderer.createPreviewBlockView(block, widthPx).apply {
-            val params = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            params.topMargin = dp(12)
-            layoutParams = params
+        val contentView = documentRenderer.createPreviewBlockView(block, widthPx)
+        val topMargin = dp(12)
+        val context = requireContext()
+        return when (block) {
+            is TextBlock -> MaterialCardView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).also { params ->
+                    params.topMargin = topMargin
+                }
+                radius = dp(16).toFloat()
+                strokeWidth = dp(1)
+                setStrokeColor(
+                    MaterialColors.getColor(
+                        context,
+                        com.google.android.material.R.attr.colorOutlineVariant,
+                        0
+                    )
+                )
+                setCardBackgroundColor(
+                    MaterialColors.getColor(
+                        context,
+                        com.google.android.material.R.attr.colorSurface,
+                        0
+                    )
+                )
+                addView(contentView.apply {
+                    setPadding(dp(14), dp(14), dp(14), dp(14))
+                })
+            }
+
+            is ImageBlock -> MaterialCardView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).also { params ->
+                    params.topMargin = topMargin
+                }
+                radius = dp(18).toFloat()
+                setCardBackgroundColor(
+                    MaterialColors.getColor(
+                        context,
+                        com.google.android.material.R.attr.colorSurface,
+                        0
+                    )
+                )
+                addView(contentView)
+            }
         }
     }
 

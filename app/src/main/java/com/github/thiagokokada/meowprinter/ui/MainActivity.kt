@@ -26,7 +26,7 @@ import com.github.thiagokokada.meowprinter.ble.PrintPacing
 import com.github.thiagokokada.meowprinter.data.AppSettings
 import com.github.thiagokokada.meowprinter.data.LogStore
 import com.github.thiagokokada.meowprinter.databinding.ActivityMainBinding
-import com.github.thiagokokada.meowprinter.document.SharedQrPayloadParser
+import com.github.thiagokokada.meowprinter.document.SharedTextImportSuggester
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
@@ -628,7 +628,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     internal fun importSharedTextAsQrBlockForTest(sharedText: String) {
-        val payload = SharedQrPayloadParser.parse(sharedText)
+        val payload = SharedTextImportSuggester.suggest(sharedText).qrPayload
         showScreen(R.id.navigation_text)
         val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
         textFragment?.appendSharedQrPayload(payload)
@@ -935,7 +935,8 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     }
 
     private fun showSharedTextImportDialog(sharedText: String) {
-        val payload = SharedQrPayloadParser.parse(sharedText)
+        val suggestion = SharedTextImportSuggester.suggest(sharedText)
+        val payload = suggestion.qrPayload
         shareImportDialog?.dismiss()
         shareImportDialog = AlertDialog.Builder(this)
             .setTitle(R.string.share_text_title)

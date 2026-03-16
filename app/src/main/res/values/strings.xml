@@ -90,10 +90,10 @@
     <string name="qr_unavailable">QR code unavailable</string>
     <string name="share_image_title">Import shared image</string>
     <string name="share_image_message">Choose whether to print the image directly or add it to Compose.</string>
-    <string name="share_image_print">Print image</string>
+    <string name="share_image_print">Add to Image Print</string>
     <string name="share_image_compose">Add to Compose</string>
     <string name="share_text_title">Import shared text</string>
-    <string name="share_text_message">Choose whether to add the shared content as a Markdown text block or as a QR code.</string>
+    <string name="share_text_message">Choose whether to add the shared content as a text block or as a QR code.</string>
     <string name="share_text_add_text_block">Add as Text block</string>
     <string name="share_text_add_qr_typed">Add as %1$s QR code</string>
     <string name="shared_text_added">Added shared content as a Text block</string>

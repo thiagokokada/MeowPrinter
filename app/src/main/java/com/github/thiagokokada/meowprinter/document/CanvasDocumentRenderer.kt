@@ -21,6 +21,7 @@ import com.github.thiagokokada.meowprinter.image.ImagePrintPreparer
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.github.thiagokokada.meowprinter.image.PreviewBitmapScaler
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
+import com.google.zxing.WriterException
 import com.google.android.material.color.MaterialColors
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
@@ -199,7 +200,7 @@ class CanvasDocumentRenderer(
         val qrBitmap = runCatching {
             QrBitmapGenerator.generate(block.payload, targetSizePx)
         }.getOrElse {
-            return createQrErrorView(frame)
+            return createQrErrorView(frame, it)
         }
         val displayedBitmap = if (mode == RenderMode.PRINT) {
             qrBitmap
@@ -221,10 +222,15 @@ class CanvasDocumentRenderer(
         return frame
     }
 
-    private fun createQrErrorView(frame: FrameLayout): View {
+    private fun createQrErrorView(frame: FrameLayout, error: Throwable): View {
+        val messageRes = if (error is WriterException) {
+            R.string.qr_content_too_large
+        } else {
+            R.string.qr_unavailable
+        }
         frame.addView(
             TextView(context).apply {
-                text = context.getString(R.string.qr_unavailable)
+                text = context.getString(messageRes)
                 setTextColor(
                     MaterialColors.getColor(
                         context,

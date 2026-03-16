@@ -651,7 +651,11 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         }
         contentContainer.addView(payloadContainer)
 
-        val textInput = qrInput(initialValue = (block.payload as? TextQrPayload)?.text.orEmpty(), labelRes = R.string.qr_text_label)
+        val textInput = qrInput(
+            initialValue = (block.payload as? TextQrPayload)?.text.orEmpty(),
+            labelRes = R.string.qr_text_label,
+            multiline = true
+        )
         val urlInput = qrInput(initialValue = (block.payload as? UrlQrPayload)?.url.orEmpty(), labelRes = R.string.qr_url_label)
         val wifiPayload = block.payload as? WifiQrPayload
         val wifiSsidInput = qrInput(initialValue = wifiPayload?.ssid.orEmpty(), labelRes = R.string.qr_wifi_ssid_label)
@@ -1083,6 +1087,10 @@ class TextFragment : Fragment(R.layout.fragment_text) {
             }
             if (multiline) {
                 minLines = 3
+                maxLines = 6
+                isSingleLine = false
+                setHorizontallyScrolling(false)
+                gravity = android.view.Gravity.TOP or android.view.Gravity.START
             }
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

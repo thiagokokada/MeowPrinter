@@ -109,6 +109,25 @@ class MainActivityTest {
     }
 
     @Test
+    fun sharedTextCanBeAddedAsQrBlock() {
+        scenario = ActivityScenario.launch<MainActivity>(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, "https://example.com")
+            }
+        )
+
+        scenario?.onActivity { activity ->
+            val dialog = activity.shareImportDialogForTest()
+            checkNotNull(dialog)
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE).performClick()
+
+            val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
+            assertEquals(true, fragment.hasQrBlockForTest())
+        }
+    }
+
+    @Test
     fun sharedImageShowsImportChooser() {
         scenario = ActivityScenario.launch<MainActivity>(
             Intent(Intent.ACTION_SEND).apply {

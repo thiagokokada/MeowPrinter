@@ -10,7 +10,7 @@ Android app for BLE thermal printers that use the reverse-engineered Cats / Meow
 
 - Auto-connects to the saved BLE printer while the app is in the foreground
 - Image printing with crop / rotate, dithering, and configurable print energy
-- Compose tab for printable documents with Markdown text blocks and image blocks
+- Compose tab for printable documents with Markdown text blocks, image blocks, and QR code blocks
 - Save and load composed documents with the Android file picker
 - Built-in test page
 - Paper advance and retract controls

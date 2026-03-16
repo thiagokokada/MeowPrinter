@@ -32,11 +32,17 @@
   - `CanvasDocumentCodec` only dispatches by version
   - `CanvasDocumentCodecParserV1` owns the current schema
   - add new versions by introducing a new parser class, not by growing conditionals inside the dispatcher
-- Update the compose document schema version on every schema change, and add a new parser class for each new version.
+- Compose QR blocks are structured content, not image blocks:
+  - persist typed QR payload fields in the document schema
+  - generate QR bitmaps at render time with `QrBitmapGenerator`
+  - do not route QR blocks through photo-style preprocessing or dithering
 - Compose image previews and Image Print previews must use the same rasterization assumptions:
   - dither at printer-width basis first
   - then downscale for display using the shared `PreviewBitmapScaler`
   - avoid separate preview pipelines that can drift visually
+- Compose has two preview levels:
+  - inline block previews may stay lightweight for editor responsiveness
+  - the explicit document preview should use the same prepared print pipeline as actual printing
 - Image resizers and ditherers are interface-based:
   - `ImageResizer.kt` defines the resizer interface, implementations, and registry
   - `ImageDitherer.kt` defines the ditherer interface, implementations, and registry
@@ -48,3 +54,18 @@
 ## Verification
 - Unit and build check: `./gradlew :app:assembleDebug :app:testDebugUnitTest`
 - Instrumentation check: `./gradlew :app:connectedDebugAndroidTest`
+
+## Integration tests
+- Prefer instrumentation smoke tests for UI regressions that unit tests cannot catch, especially around:
+  - Compose block flows
+  - preview dialogs
+  - activity launches and navigation
+- Favor `ActivityScenario` and direct `onActivity { ... }` assertions for app-owned dialogs and state, instead of fragile Espresso-only dialog matching.
+- When a flow is hard to observe from outside, add a narrow test hook in the activity/fragment rather than building a second production code path just for tests.
+- Keep integration tests deterministic:
+  - use app-managed temporary images/files
+  - avoid depending on external BLE hardware state
+  - prefer compile-time validation with `:app:compileDebugAndroidTestKotlin` when no device is available
+- Renderer and codec changes should usually get both:
+  - a focused unit/instrumentation test at the document/image layer
+  - a small UI-level smoke test when the feature is user-triggered

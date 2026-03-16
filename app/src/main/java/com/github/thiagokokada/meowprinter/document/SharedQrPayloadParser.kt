@@ -30,8 +30,9 @@ object SharedQrPayloadParser {
     }
 
     private fun parseMailto(text: String): QrPayload {
-        val address = text.substringAfter("mailto:", "").substringBefore("?").trim()
-        val query = text.substringAfter("?", "")
+        val schemeSpecific = text.substringAfter(":", "")
+        val address = schemeSpecific.substringBefore("?").trim()
+        val query = schemeSpecific.substringAfter("?", "")
         val params = parseQueryParams(query)
         return EmailQrPayload(
             to = address,
@@ -67,8 +68,14 @@ object SharedQrPayloadParser {
             .mapNotNull { entry ->
                 val key = entry.substringBefore("=", "").takeIf(String::isNotBlank) ?: return@mapNotNull null
                 val value = entry.substringAfter("=", "")
-                key to URLDecoder.decode(value, StandardCharsets.UTF_8)
+                key to decodeQueryValue(value)
             }
             .toMap()
+    }
+
+    private fun decodeQueryValue(value: String): String {
+        return runCatching {
+            URLDecoder.decode(value, StandardCharsets.UTF_8)
+        }.getOrDefault(value)
     }
 }

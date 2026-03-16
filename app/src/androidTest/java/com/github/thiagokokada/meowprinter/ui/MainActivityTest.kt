@@ -71,7 +71,11 @@ class MainActivityTest {
     @Test
     fun sharedTextShowsImportChooser() {
         scenario = ActivityScenario.launch<MainActivity>(
-            Intent(Intent.ACTION_SEND).apply {
+            Intent(
+                androidx.test.core.app.ApplicationProvider.getApplicationContext(),
+                MainActivity::class.java
+            ).apply {
+                action = Intent.ACTION_SEND
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, "https://example.com")
             }
@@ -92,7 +96,11 @@ class MainActivityTest {
     fun sharedTextCanBeAddedAsTextBlock() {
         val sharedText = "Imported shared text"
         scenario = ActivityScenario.launch<MainActivity>(
-            Intent(Intent.ACTION_SEND).apply {
+            Intent(
+                androidx.test.core.app.ApplicationProvider.getApplicationContext(),
+                MainActivity::class.java
+            ).apply {
+                action = Intent.ACTION_SEND
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, sharedText)
             }
@@ -111,7 +119,11 @@ class MainActivityTest {
     @Test
     fun sharedTextCanBeAddedAsQrBlock() {
         scenario = ActivityScenario.launch<MainActivity>(
-            Intent(Intent.ACTION_SEND).apply {
+            Intent(
+                androidx.test.core.app.ApplicationProvider.getApplicationContext(),
+                MainActivity::class.java
+            ).apply {
+                action = Intent.ACTION_SEND
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, "https://example.com")
             }
@@ -130,7 +142,11 @@ class MainActivityTest {
     @Test
     fun sharedImageShowsImportChooser() {
         scenario = ActivityScenario.launch<MainActivity>(
-            Intent(Intent.ACTION_SEND).apply {
+            Intent(
+                androidx.test.core.app.ApplicationProvider.getApplicationContext(),
+                MainActivity::class.java
+            ).apply {
+                action = Intent.ACTION_SEND
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, Uri.parse("content://com.github.thiagokokada.meowprinter.test/shared-image"))
             }

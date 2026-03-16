@@ -26,6 +26,34 @@ class SharedQrPayloadParserTest {
     }
 
     @Test
+    fun parsesUppercaseMailto() {
+        val payload = SharedQrPayloadParser.parse("MAILTO:cat@example.com?subject=Hello")
+
+        assertEquals(
+            EmailQrPayload(
+                to = "cat@example.com",
+                subject = "Hello",
+                body = ""
+            ),
+            payload
+        )
+    }
+
+    @Test
+    fun fallsBackToRawMalformedPercentEncodedQueryValue() {
+        val payload = SharedQrPayloadParser.parse("mailto:cat@example.com?body=100%")
+
+        assertEquals(
+            EmailQrPayload(
+                to = "cat@example.com",
+                subject = "",
+                body = "100%"
+            ),
+            payload
+        )
+    }
+
+    @Test
     fun parsesPlainEmailAddress() {
         val payload = SharedQrPayloadParser.parse("cat@example.com")
 

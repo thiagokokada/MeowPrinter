@@ -94,7 +94,7 @@ object AtkinsonImageDitherer : ImageDitherer {
 }
 
 object Ordered4x4ImageDitherer : ImageDitherer {
-    override val mode = DitheringMode.ORDERED_BAYER_4X4
+    override val mode = DitheringMode.ORDERED_4X4
 
     override fun rowsFor(grayscale: FloatArray, width: Int, height: Int): List<BooleanArray> {
         val matrix = arrayOf(
@@ -111,7 +111,7 @@ object Ordered4x4ImageDitherer : ImageDitherer {
 }
 
 object OrderedBayer8x8ImageDitherer : ImageDitherer {
-    override val mode = DitheringMode.ORDERED_BAYER_8X8
+    override val mode = DitheringMode.ORDERED_8X8
 
     override fun rowsFor(grayscale: FloatArray, width: Int, height: Int): List<BooleanArray> {
         val matrix = arrayOf(

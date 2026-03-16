@@ -75,7 +75,6 @@ import java.util.UUID
 class TextFragment : Fragment(R.layout.fragment_text) {
     interface Host {
         fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String)
-        fun selectedTextDithering(): DitheringMode
         fun connectionSummary(): ConnectionSummary
         fun refreshPrinterConnection()
         fun isPrintInProgress(): Boolean
@@ -929,11 +928,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 mode = CanvasDocumentRenderer.RenderMode.PRINT
             )
         }.onSuccess { bitmap ->
-            val preparedImage = ImagePrintPreparer.prepare(
-                sourceBitmap = bitmap,
-                ditheringMode = host?.selectedTextDithering() ?: appSettings.selectedDitheringMode,
-                resizerMode = appSettings.selectedImageResizerMode
-            )
+            val preparedImage = ImagePrintPreparer.prepareRenderedDocument(bitmap)
             host?.printPreparedImage(preparedImage, getString(R.string.text_printing_label))
         }.onFailure { error ->
             Toast.makeText(requireContext(), R.string.text_print_failed, Toast.LENGTH_SHORT).show()
@@ -953,11 +948,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 widthPx = PRINT_RENDER_WIDTH_PX,
                 mode = CanvasDocumentRenderer.RenderMode.PRINT
             )
-            val preparedImage = ImagePrintPreparer.prepare(
-                sourceBitmap = renderedBitmap,
-                ditheringMode = host?.selectedTextDithering() ?: appSettings.selectedDitheringMode,
-                resizerMode = appSettings.selectedImageResizerMode
-            )
+            val preparedImage = ImagePrintPreparer.prepareRenderedDocument(renderedBitmap)
             val displayWidth = (resources.displayMetrics.widthPixels - dp(64)).coerceAtLeast(dp(180))
             PreviewBitmapScaler.scaleForDisplay(preparedImage.previewBitmap, displayWidth)
         }.onSuccess { previewBitmap ->

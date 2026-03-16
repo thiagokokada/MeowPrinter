@@ -739,8 +739,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         }
     }
 
-    override fun selectedTextDithering(): DitheringMode = appSettings.selectedDitheringMode
-
     override fun connectionSummary(): ConnectionSummary {
         val connected = printerManager?.isPrinterReady == true
         val printerName = connectedPrinterName ?: appSettings.selectedPrinterName ?: getString(R.string.no_printer_selected)

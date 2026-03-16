@@ -21,6 +21,31 @@ data class PreparedPrintImage(
 )
 
 object ImagePrintPreparer {
+    fun prepareRenderedDocument(
+        sourceBitmap: Bitmap,
+        targetWidth: Int = CatPrinterProtocol.PRINT_WIDTH
+    ): PreparedPrintImage {
+        val bitmap = if (sourceBitmap.width == targetWidth) {
+            sourceBitmap
+        } else {
+            ImageBitmapResizers.forMode(ImageResizerMode.SYSTEM_FILTERED).resize(sourceBitmap, targetWidth)
+        }
+        val rows = monochromeRows(bitmap)
+        val previewBitmap = ImageDitherers.previewBitmap(rows, bitmap.width, bitmap.height)
+
+        return PreparedPrintImage(
+            previewBitmap = previewBitmap,
+            rows = rows,
+            originalWidth = sourceBitmap.width,
+            originalHeight = sourceBitmap.height,
+            printWidth = previewBitmap.width,
+            printHeight = previewBitmap.height,
+            ditheringMode = DitheringMode.THRESHOLD,
+            processingMode = ImageProcessingMode.NORMAL,
+            resizerMode = ImageResizerMode.SYSTEM_FILTERED
+        )
+    }
+
     fun prepare(
         contentResolver: ContentResolver,
         uri: Uri,
@@ -97,6 +122,24 @@ object ImagePrintPreparer {
             processingMode = processingMode,
             resizerMode = resizerMode
         )
+    }
+
+    private fun monochromeRows(bitmap: Bitmap): List<BooleanArray> {
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        return buildList(bitmap.height) {
+            for (y in 0 until bitmap.height) {
+                add(BooleanArray(bitmap.width) { x ->
+                    val pixel = pixels[(y * bitmap.width) + x]
+                    val alpha = Color.alpha(pixel) / 255f
+                    val red = ((255f * (1f - alpha)) + (Color.red(pixel) * alpha))
+                    val green = ((255f * (1f - alpha)) + (Color.green(pixel) * alpha))
+                    val blue = ((255f * (1f - alpha)) + (Color.blue(pixel) * alpha))
+                    val grayscale = (red * 0.299f) + (green * 0.587f) + (blue * 0.114f)
+                    grayscale < 200f
+                })
+            }
+        }
     }
 
     private fun extractGrayscale(bitmap: Bitmap): FloatArray {

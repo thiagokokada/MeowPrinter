@@ -4,8 +4,8 @@ enum class DitheringMode(val displayName: String) {
     THRESHOLD("No dithering"),
     FLOYD_STEINBERG("Floyd-Steinberg"),
     ATKINSON("Atkinson"),
-    ORDERED_BAYER_4X4("Ordered Bayer 4x4"),
-    ORDERED_BAYER_8X8("Ordered Bayer 8x8");
+    ORDERED_4X4("Ordered Bayer 4x4"),
+    ORDERED_8X8("Ordered Bayer 8x8");
 
     companion object {
         fun fromStoredValue(value: String?): DitheringMode {

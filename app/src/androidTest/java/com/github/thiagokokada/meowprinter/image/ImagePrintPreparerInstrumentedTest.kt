@@ -109,7 +109,7 @@ class ImagePrintPreparerInstrumentedTest {
             setPixel(3, 0, Color.WHITE)
         }
 
-        val prepared = ImagePrintPreparer.prepareRenderedDocument(bitmap)
+        val prepared = ImagePrintPreparer.prepareRenderedDocument(bitmap, targetWidth = 4)
 
         assertEquals(DitheringMode.THRESHOLD, prepared.ditheringMode)
         assertEquals(ImageProcessingMode.NORMAL, prepared.processingMode)

@@ -617,6 +617,10 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
 
     internal fun shareImportDialogForTest(): AlertDialog? = shareImportDialog
 
+    internal fun handleIntentForTest(intent: Intent) {
+        handleIntent(intent)
+    }
+
     override fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String) {
         ensureNotificationPermissionThen {
             startPrintPreparedImage(preparedImage, sourceLabel)

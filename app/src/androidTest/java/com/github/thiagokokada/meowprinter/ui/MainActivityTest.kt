@@ -70,18 +70,15 @@ class MainActivityTest {
 
     @Test
     fun sharedTextShowsImportChooser() {
-        scenario = ActivityScenario.launch<MainActivity>(
-            Intent(
-                androidx.test.core.app.ApplicationProvider.getApplicationContext(),
-                MainActivity::class.java
-            ).apply {
-                action = Intent.ACTION_SEND
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, "https://example.com")
-            }
-        )
+        scenario = ActivityScenario.launch(MainActivity::class.java)
 
         scenario?.onActivity { activity ->
+            activity.handleIntentForTest(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "https://example.com")
+                }
+            )
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
             assertEquals(true, dialog.isShowing)
@@ -95,18 +92,15 @@ class MainActivityTest {
     @Test
     fun sharedTextCanBeAddedAsTextBlock() {
         val sharedText = "Imported shared text"
-        scenario = ActivityScenario.launch<MainActivity>(
-            Intent(
-                androidx.test.core.app.ApplicationProvider.getApplicationContext(),
-                MainActivity::class.java
-            ).apply {
-                action = Intent.ACTION_SEND
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, sharedText)
-            }
-        )
+        scenario = ActivityScenario.launch(MainActivity::class.java)
 
         scenario?.onActivity { activity ->
+            activity.handleIntentForTest(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, sharedText)
+                }
+            )
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick()
@@ -118,18 +112,15 @@ class MainActivityTest {
 
     @Test
     fun sharedTextCanBeAddedAsQrBlock() {
-        scenario = ActivityScenario.launch<MainActivity>(
-            Intent(
-                androidx.test.core.app.ApplicationProvider.getApplicationContext(),
-                MainActivity::class.java
-            ).apply {
-                action = Intent.ACTION_SEND
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, "https://example.com")
-            }
-        )
+        scenario = ActivityScenario.launch(MainActivity::class.java)
 
         scenario?.onActivity { activity ->
+            activity.handleIntentForTest(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "https://example.com")
+                }
+            )
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE).performClick()
@@ -141,18 +132,15 @@ class MainActivityTest {
 
     @Test
     fun sharedImageShowsImportChooser() {
-        scenario = ActivityScenario.launch<MainActivity>(
-            Intent(
-                androidx.test.core.app.ApplicationProvider.getApplicationContext(),
-                MainActivity::class.java
-            ).apply {
-                action = Intent.ACTION_SEND
-                type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, Uri.parse("content://com.github.thiagokokada.meowprinter.test/shared-image"))
-            }
-        )
+        scenario = ActivityScenario.launch(MainActivity::class.java)
 
         scenario?.onActivity { activity ->
+            activity.handleIntentForTest(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "image/png"
+                    putExtra(Intent.EXTRA_STREAM, Uri.parse("content://com.github.thiagokokada.meowprinter.test/shared-image"))
+                }
+            )
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
             assertEquals(true, dialog.isShowing)

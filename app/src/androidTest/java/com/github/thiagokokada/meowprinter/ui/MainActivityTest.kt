@@ -3,13 +3,14 @@ package com.github.thiagokokada.meowprinter.ui
 import android.graphics.Bitmap
 import android.view.View
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.github.thiagokokada.meowprinter.R
+import com.github.thiagokokada.meowprinter.data.AppSettings
+import com.github.thiagokokada.meowprinter.document.QrBlock
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
@@ -141,7 +142,6 @@ class MainActivityTest {
             activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
                 R.id.navigation_text
             val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
-            val container = activity.findViewById<LinearLayout>(R.id.text_blocks_container)
 
             activity.findViewById<View>(R.id.button_add_qr_block).performClick()
 
@@ -152,24 +152,8 @@ class MainActivityTest {
             textInput.setText("https://example.com")
             dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
 
-            val hasQrCard = (0 until container.childCount)
-                .mapNotNull { index -> container.getChildAt(index) }
-                .flatMap { card ->
-                    collectText(card)
-                }
-                .any { it == activity.getString(R.string.block_title_qr) }
-
-            assertEquals(true, hasQrCard)
-        }
-    }
-
-    private fun collectText(view: View): List<String> {
-        return when (view) {
-            is TextView -> listOf(view.text.toString())
-            is android.view.ViewGroup -> (0 until view.childCount).flatMap { index ->
-                collectText(view.getChildAt(index))
-            }
-            else -> emptyList()
+            val hasQrBlock = AppSettings(activity).canvasDocumentDraft.blocks.any { it is QrBlock }
+            assertEquals(true, hasQrBlock)
         }
     }
 

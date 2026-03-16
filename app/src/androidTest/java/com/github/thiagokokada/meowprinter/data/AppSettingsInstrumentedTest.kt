@@ -3,6 +3,7 @@ package com.github.thiagokokada.meowprinter.data
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.github.thiagokokada.meowprinter.ble.PrintPacingProfile
 import com.github.thiagokokada.meowprinter.document.BlockAlignment
 import com.github.thiagokokada.meowprinter.document.CanvasDocument
 import com.github.thiagokokada.meowprinter.document.CanvasTextFont
@@ -29,7 +30,7 @@ class AppSettingsInstrumentedTest {
 
     @Test
     fun defaultsMatchAppExpectations() {
-        assertEquals(100, appSettings.selectedPrintPacingPercent)
+        assertEquals(PrintPacingProfile.BALANCED, appSettings.selectedPrintPacingProfile)
         assertEquals(1, appSettings.selectedEndPaperPasses)
     }
 
@@ -59,12 +60,12 @@ class AppSettingsInstrumentedTest {
     }
 
     @Test
-    fun printPacingPercentPersists() {
-        appSettings.selectedPrintPacingPercent = 72
+    fun printPacingProfilePersists() {
+        appSettings.selectedPrintPacingProfile = PrintPacingProfile.SAFE
 
-        val restored = AppSettings(context).selectedPrintPacingPercent
+        val restored = AppSettings(context).selectedPrintPacingProfile
 
-        assertEquals(72, restored)
+        assertEquals(PrintPacingProfile.SAFE, restored)
     }
 
     @Test

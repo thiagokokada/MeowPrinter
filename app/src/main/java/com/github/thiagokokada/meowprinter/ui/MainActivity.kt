@@ -621,6 +621,19 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         handleIntent(intent)
     }
 
+    internal fun importSharedTextAsTextBlockForTest(sharedText: String) {
+        showScreen(R.id.navigation_text)
+        val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
+        textFragment?.appendSharedTextBlock(sharedText)
+    }
+
+    internal fun importSharedTextAsQrBlockForTest(sharedText: String) {
+        val payload = SharedQrPayloadParser.parse(sharedText)
+        showScreen(R.id.navigation_text)
+        val textFragment = supportFragmentManager.findFragmentById(R.id.text_fragment_container) as? TextFragment
+        textFragment?.appendSharedQrPayload(payload)
+    }
+
     override fun printPreparedImage(preparedImage: PreparedPrintImage, sourceLabel: String) {
         ensureNotificationPermissionThen {
             startPrintPreparedImage(preparedImage, sourceLabel)

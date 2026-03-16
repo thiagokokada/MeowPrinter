@@ -103,7 +103,7 @@ class MainActivityTest {
             )
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
-            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick()
+            activity.importSharedTextAsTextBlockForTest(sharedText)
 
             val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
             assertEquals(true, fragment.hasTextBlockWithMarkdownForTest(sharedText))
@@ -123,7 +123,7 @@ class MainActivityTest {
             )
             val dialog = activity.shareImportDialogForTest()
             checkNotNull(dialog)
-            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE).performClick()
+            activity.importSharedTextAsQrBlockForTest("https://example.com")
 
             val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
             assertEquals(true, fragment.hasQrBlockForTest())

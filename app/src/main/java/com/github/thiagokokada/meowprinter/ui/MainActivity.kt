@@ -48,9 +48,6 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
     private lateinit var binding: ActivityMainBinding
     private lateinit var scanner: BlePrinterScanner
     private lateinit var appSettings: AppSettings
-    private lateinit var ditheringAdapter: ArrayAdapter<String>
-    private lateinit var imageProcessingAdapter: ArrayAdapter<String>
-    private lateinit var imageResizerAdapter: ArrayAdapter<String>
     private lateinit var printerAdapter: ArrayAdapter<String>
 
     private var printerManager: BlePrinterManager? = null
@@ -179,7 +176,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         binding.appTitle.text = getString(R.string.app_name)
         binding.toolbar.setNavigationOnClickListener(null)
 
-        ditheringAdapter = ArrayAdapter(
+        val ditheringAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
             DitheringMode.entries.map { it.displayName }
@@ -201,7 +198,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 }
             }
         }
-        imageProcessingAdapter = ArrayAdapter(
+        val imageProcessingAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
             ImageProcessingMode.entries.map { it.displayName }
@@ -223,7 +220,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
                 }
             }
         }
-        imageResizerAdapter = ArrayAdapter(
+        val imageResizerAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
             ImageResizerMode.entries.map { it.displayName }

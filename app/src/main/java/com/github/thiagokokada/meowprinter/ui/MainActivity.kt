@@ -894,45 +894,23 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
             }
 
             Intent.ACTION_SEND -> {
-                val sharedImageUri = extractSharedImageUri(intent)
-                if (sharedImageUri != null) {
-                    showSharedImageImportDialog(sharedImageUri)
-                } else {
-                    val sharedText = extractSharedText(intent)
-                    if (!sharedText.isNullOrBlank()) {
-                        showSharedTextImportDialog(sharedText)
-                    } else {
-                        appendLog("Ignored share intent without an image or text.")
-                    }
+                when (val request = parseSharedImportRequest(intent)) {
+                    is SharedImportRequest.Image -> showSharedImageImportDialog(request.uri)
+                    is SharedImportRequest.Text -> showSharedTextImportDialog(request.value)
+                    SharedImportRequest.None -> appendLog("Ignored share intent without an image or text.")
                 }
                 intent.action = null
             }
         }
     }
 
-    private fun extractSharedImageUri(intent: Intent): Uri? {
-        val isImageShare = intent.type?.startsWith("image/") == true
-        if (!isImageShare) {
-            return null
-        }
-        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)?.let { return it }
-        return intent.clipData
+    private fun parseSharedImportRequest(intent: Intent): SharedImportRequest {
+        val clipDataText = intent.clipData
             ?.takeIf { it.itemCount > 0 }
             ?.getItemAt(0)
-            ?.uri
-    }
-
-    private fun extractSharedText(intent: Intent): String? {
-        val isTextShare = intent.type?.startsWith("text/") == true
-        if (!isTextShare) {
-            return null
-        }
-        return intent.getStringExtra(Intent.EXTRA_TEXT)
-            ?: intent.clipData
-                ?.takeIf { it.itemCount > 0 }
-                ?.getItemAt(0)
-                ?.coerceToText(this)
-                ?.toString()
+            ?.coerceToText(this)
+            ?.toString()
+        return SharedImportRequestParser.parse(intent, clipDataText)
     }
 
     private fun showSharedImageImportDialog(sharedImageUri: Uri) {

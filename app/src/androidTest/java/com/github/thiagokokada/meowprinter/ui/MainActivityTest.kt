@@ -2,6 +2,7 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.graphics.Bitmap
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.core.app.ActivityScenario
@@ -128,6 +129,30 @@ class MainActivityTest {
 
             val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
             assertEquals(true, fragment.isPreviewDialogShowingForTest())
+        }
+    }
+
+    @Test
+    fun addQrBlockCreatesComposeBlock() {
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+
+        scenario?.onActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_text
+            val fragment = activity.supportFragmentManager.findFragmentById(R.id.text_fragment_container) as TextFragment
+            val initialCount = activity.findViewById<android.widget.LinearLayout>(R.id.text_blocks_container).childCount
+
+            activity.findViewById<View>(R.id.button_add_qr_block).performClick()
+
+            val dialog = fragment.qrDialogForTest()
+            checkNotNull(dialog)
+            val textInput = dialog.window?.decorView?.findViewWithTag("qr_text_label") as? EditText
+            checkNotNull(textInput)
+            textInput.setText("https://example.com")
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
+
+            val updatedCount = activity.findViewById<android.widget.LinearLayout>(R.id.text_blocks_container).childCount
+            assertEquals(initialCount + 1, updatedCount)
         }
     }
 

@@ -86,6 +86,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     private lateinit var documentImageStore: DocumentImageStore
     private lateinit var documentRenderer: CanvasDocumentRenderer
     private var previewDialog: AlertDialog? = null
+    private var qrDialog: AlertDialog? = null
     private var currentDocument = CanvasDocument.default()
     private var currentSavedDocumentName: String? = null
     private var pendingImageTargetBlockId: String? = null
@@ -195,6 +196,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     override fun onDestroyView() {
         previewDialog?.dismiss()
         previewDialog = null
+        qrDialog?.dismiss()
+        qrDialog = null
         binding = null
         super.onDestroyView()
     }
@@ -816,6 +819,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                 dialog.dismiss()
             }
         }
+        qrDialog?.dismiss()
+        qrDialog = dialog
         dialog.show()
     }
 
@@ -950,6 +955,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         return previewDialog?.isShowing == true
     }
 
+    internal fun qrDialogForTest(): AlertDialog? = qrDialog
+
     private fun confirmStartNewDocument() {
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.text_new_document_title)
@@ -1067,6 +1074,7 @@ class TextFragment : Fragment(R.layout.fragment_text) {
     ): EditText {
         return EditText(requireContext()).apply {
             hint = getString(labelRes)
+            tag = resources.getResourceEntryName(labelRes)
             setText(initialValue)
             this.inputType = if (multiline) {
                 inputType or InputType.TYPE_TEXT_FLAG_MULTI_LINE

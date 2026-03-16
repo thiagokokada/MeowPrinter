@@ -15,10 +15,10 @@ class PrintPacingProfileTest {
     }
 
     @Test
-    fun balancedProfileMatchesFortyFivePercent() {
+    fun balancedProfileMatchesSixtyPercent() {
         val balanced = PrintPacingProfile.BALANCED.toPacing(customPercent = 42)
 
-        assertEquals(PrintPacing.fromPercent(45), balanced)
+        assertEquals(PrintPacing.fromPercent(60), balanced)
     }
 
     @Test
@@ -36,6 +36,26 @@ class PrintPacingProfileTest {
         val custom = PrintPacingProfile.CUSTOM.toPacing(customPercent = 73)
 
         assertEquals(PrintPacing.fromPercent(73), custom)
+    }
+
+    @Test
+    fun customProfileMatchesZeroPercentAtLowerBound() {
+        val custom = PrintPacingProfile.CUSTOM.toPacing(customPercent = 0)
+
+        assertEquals(14L, custom.controlCommandDelayMs)
+        assertEquals(14L, custom.rowCommandDelayMs)
+        assertEquals(20, custom.rowCommandExtraPauseEvery)
+        assertEquals(120L, custom.rowCommandExtraPauseMs)
+    }
+
+    @Test
+    fun customProfileMatchesHundredPercentAtUpperBound() {
+        val custom = PrintPacingProfile.CUSTOM.toPacing(customPercent = 100)
+
+        assertEquals(0L, custom.controlCommandDelayMs)
+        assertEquals(0L, custom.rowCommandDelayMs)
+        assertEquals(56, custom.rowCommandExtraPauseEvery)
+        assertEquals(0L, custom.rowCommandExtraPauseMs)
     }
 
     @Test

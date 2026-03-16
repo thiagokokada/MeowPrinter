@@ -10,7 +10,7 @@ enum class PrintPacingProfile(
     ),
     BALANCED(
         displayName = "Balanced",
-        presetPercent = 45
+        presetPercent = 60
     ),
     SAFE(
         displayName = "Safe",

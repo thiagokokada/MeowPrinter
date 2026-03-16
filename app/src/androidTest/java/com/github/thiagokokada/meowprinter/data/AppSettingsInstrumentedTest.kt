@@ -69,6 +69,15 @@ class AppSettingsInstrumentedTest {
     }
 
     @Test
+    fun customPrintPacingPercentPersists() {
+        appSettings.selectedCustomPrintPacingPercent = 73
+
+        val restored = AppSettings(context).selectedCustomPrintPacingPercent
+
+        assertEquals(73, restored)
+    }
+
+    @Test
     fun imageProcessingModePersists() {
         appSettings.selectedImageProcessingMode = ImageProcessingMode.SHARPEN
 

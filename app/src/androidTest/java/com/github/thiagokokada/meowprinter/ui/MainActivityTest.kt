@@ -4,12 +4,16 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.view.View
+import android.widget.Spinner
 import android.widget.TextView
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.github.thiagokokada.meowprinter.R
+import com.github.thiagokokada.meowprinter.ble.PrintPacingProfile
+import com.github.thiagokokada.meowprinter.data.AppSettings
 import com.github.thiagokokada.meowprinter.document.TextQrPayload
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
@@ -17,12 +21,22 @@ import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import org.junit.Assert.assertEquals
 import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class MainActivityTest {
     private var scenario: ActivityScenario<MainActivity>? = null
+
+    @Before
+    fun setUp() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        context.getSharedPreferences("meow_printer_settings", android.content.Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
+    }
 
     @After
     fun tearDown() {
@@ -66,6 +80,37 @@ class MainActivityTest {
                 View.VISIBLE,
                 activity.findViewById<View>(R.id.saved_printer_value).visibility
             )
+        }
+    }
+
+    @Test
+    fun selectingCustomPacingShowsSliderAndPresetHidesIt() {
+        launchMainActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_settings
+
+            val profileSpinner = activity.findViewById<Spinner>(R.id.spinner_print_pacing_profile)
+            profileSpinner.setSelection(PrintPacingProfile.entries.indexOf(PrintPacingProfile.CUSTOM))
+
+            assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.slider_print_pacing).visibility)
+
+            profileSpinner.setSelection(PrintPacingProfile.entries.indexOf(PrintPacingProfile.BALANCED))
+
+            assertEquals(View.GONE, activity.findViewById<View>(R.id.slider_print_pacing).visibility)
+        }
+    }
+
+    @Test
+    fun savedEndPaperPassesRestoresSpinnerSelection() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        AppSettings(context).selectedEndPaperPasses = 2
+
+        launchMainActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_settings
+
+            val spinner = activity.findViewById<Spinner>(R.id.spinner_end_paper_passes)
+            assertEquals(2, spinner.selectedItemPosition)
         }
     }
 

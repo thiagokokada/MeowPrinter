@@ -53,6 +53,7 @@
     <string name="text_block_alignment_label">Alignment</string>
     <string name="text_block_size_label">Font size</string>
     <string name="text_block_font_label">Font</string>
+    <string name="text_block_weight_label">Weight</string>
     <string name="text_edit_text">Edit text block</string>
     <string name="text_edit_image">Edit image block</string>
     <string name="text_edit_qr">Edit QR block</string>
@@ -113,8 +114,12 @@
     <string name="image_processing_label">Image processing</string>
     <string name="image_resizer_label">Resizer</string>
     <string name="energy_label">Print energy</string>
-    <string name="energy_subtitle">Controls how strong the thermal print is. Lower is lighter, higher is darker.</string>
+    <string name="energy_subtitle">Controls how strong the thermal print is. Light is lighter, Medium is balanced, and Dark increases black coverage. Use Custom for a manual value.</string>
     <string name="energy_value">%1$d%%</string>
+    <string name="energy_light">Light</string>
+    <string name="energy_medium">Medium</string>
+    <string name="energy_dark">Dark</string>
+    <string name="energy_custom">Custom</string>
     <string name="print_pacing_label">Print speed</string>
     <string name="print_pacing_subtitle">Fast prints quicker, Balanced is a good default, and Safe slows long prints down to improve reliability on flaky printers.</string>
     <string name="print_pacing_fast">Fast</string>

@@ -37,6 +37,7 @@ import com.github.thiagokokada.meowprinter.document.CanvasDocumentEditor
 import com.github.thiagokokada.meowprinter.document.CanvasDocumentRenderer
 import com.github.thiagokokada.meowprinter.document.CanvasTextFont
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
+import com.github.thiagokokada.meowprinter.document.CanvasTextWeight
 import com.github.thiagokokada.meowprinter.document.CalendarQrPayload
 import com.github.thiagokokada.meowprinter.document.ContactQrPayload
 import com.github.thiagokokada.meowprinter.document.DocumentBlock
@@ -451,19 +452,22 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         val alignmentSpinner = dialogView.findViewById<Spinner>(R.id.spinner_text_block_alignment)
         val sizeSpinner = dialogView.findViewById<Spinner>(R.id.spinner_text_block_size)
         val fontSpinner = dialogView.findViewById<Spinner>(R.id.spinner_text_block_font)
+        val weightSpinner = dialogView.findViewById<Spinner>(R.id.spinner_text_block_weight)
 
         val block = existingBlock ?: TextBlock(
             id = UUID.randomUUID().toString(),
             markdown = "",
             alignment = BlockAlignment.LEFT,
             textSize = CanvasTextSize.SP12,
-            textFont = CanvasTextFont.SANS_SERIF
+            textFont = CanvasTextFont.SANS_SERIF,
+            textWeight = CanvasTextWeight.FINE
         )
 
         contentInput.setText(block.markdown)
         setupSpinner(alignmentSpinner, BlockAlignment.entries.map { it.displayName }, block.alignment.ordinal)
         setupSpinner(sizeSpinner, CanvasTextSize.entries.map { it.displayName }, block.textSize.ordinal)
         setupSpinner(fontSpinner, CanvasTextFont.entries.map { it.displayName }, block.textFont.ordinal)
+        setupSpinner(weightSpinner, CanvasTextWeight.entries.map { it.displayName }, block.textWeight.ordinal)
         bindMarkdownHelperButtons(dialogView, contentInput)
 
         AlertDialog.Builder(requireContext())
@@ -475,7 +479,8 @@ class TextFragment : Fragment(R.layout.fragment_text) {
                     markdown = contentInput.text?.toString().orEmpty(),
                     alignment = BlockAlignment.entries[alignmentSpinner.selectedItemPosition],
                     textSize = CanvasTextSize.entries[sizeSpinner.selectedItemPosition],
-                    textFont = CanvasTextFont.entries[fontSpinner.selectedItemPosition]
+                    textFont = CanvasTextFont.entries[fontSpinner.selectedItemPosition],
+                    textWeight = CanvasTextWeight.entries[weightSpinner.selectedItemPosition]
                 )
                 upsertBlock(updatedBlock, existingBlock == null)
             }

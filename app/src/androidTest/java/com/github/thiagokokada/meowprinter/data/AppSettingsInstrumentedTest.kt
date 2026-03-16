@@ -8,9 +8,12 @@ import com.github.thiagokokada.meowprinter.document.BlockAlignment
 import com.github.thiagokokada.meowprinter.document.CanvasDocument
 import com.github.thiagokokada.meowprinter.document.CanvasTextFont
 import com.github.thiagokokada.meowprinter.document.CanvasTextSize
+import com.github.thiagokokada.meowprinter.document.CanvasTextWeight
 import com.github.thiagokokada.meowprinter.document.TextBlock
+import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
+import com.github.thiagokokada.meowprinter.print.PrintEnergyProfile
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -30,6 +33,9 @@ class AppSettingsInstrumentedTest {
 
     @Test
     fun defaultsMatchAppExpectations() {
+        assertEquals(DitheringMode.THRESHOLD, appSettings.selectedDitheringMode)
+        assertEquals(PrintEnergyProfile.MEDIUM, appSettings.selectedPrintEnergyProfile)
+        assertEquals(65, appSettings.selectedCustomPrintEnergyPercent)
         assertEquals(PrintPacingProfile.BALANCED, appSettings.selectedPrintPacingProfile)
         assertEquals(1, appSettings.selectedEndPaperPasses)
     }
@@ -43,7 +49,8 @@ class AppSettingsInstrumentedTest {
                     markdown = "## Hello printer",
                     alignment = BlockAlignment.CENTER,
                     textSize = CanvasTextSize.SP20,
-                    textFont = CanvasTextFont.SERIF
+                    textFont = CanvasTextFont.SERIF,
+                    textWeight = CanvasTextWeight.NORMAL
                 )
             )
         )
@@ -57,6 +64,25 @@ class AppSettingsInstrumentedTest {
         assertEquals(BlockAlignment.CENTER, restoredBlock.alignment)
         assertEquals(CanvasTextSize.SP20, restoredBlock.textSize)
         assertEquals(CanvasTextFont.SERIF, restoredBlock.textFont)
+        assertEquals(CanvasTextWeight.NORMAL, restoredBlock.textWeight)
+    }
+
+    @Test
+    fun printEnergyProfilePersists() {
+        appSettings.selectedPrintEnergyProfile = PrintEnergyProfile.DARK
+
+        val restored = AppSettings(context).selectedPrintEnergyProfile
+
+        assertEquals(PrintEnergyProfile.DARK, restored)
+    }
+
+    @Test
+    fun customPrintEnergyPercentPersists() {
+        appSettings.selectedCustomPrintEnergyPercent = 83
+
+        val restored = AppSettings(context).selectedCustomPrintEnergyPercent
+
+        assertEquals(83, restored)
     }
 
     @Test

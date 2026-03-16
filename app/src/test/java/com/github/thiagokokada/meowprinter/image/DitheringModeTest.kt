@@ -6,8 +6,8 @@ import org.junit.Test
 class DitheringModeTest {
     @Test
     fun fromStoredValueFallsBackToDefaultWhenValueIsUnknown() {
-        assertEquals(DitheringMode.FLOYD_STEINBERG, DitheringMode.fromStoredValue(null))
-        assertEquals(DitheringMode.FLOYD_STEINBERG, DitheringMode.fromStoredValue("unknown"))
+        assertEquals(DitheringMode.THRESHOLD, DitheringMode.fromStoredValue(null))
+        assertEquals(DitheringMode.THRESHOLD, DitheringMode.fromStoredValue("unknown"))
     }
 
     @Test

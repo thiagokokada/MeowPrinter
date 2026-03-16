@@ -20,6 +20,11 @@
 - Keep the Image / Compose / Settings structure consistent unless the task explicitly changes navigation.
 - Reuse the shared document render path for compose preview and printing instead of adding separate rendering flows.
 - Keep `Print image` / `Print document` button gating strict: they should reflect real foreground connection readiness, not silently reconnect on tap.
+- Shared import flow should stay layered:
+  - `SharedImportRequestParser` handles Android `ACTION_SEND` parsing
+  - `SharedTextImportSuggester` handles text-vs-QR import suggestions near the document/QR domain
+  - `MainActivity` should only coordinate chooser UI and dispatch explicit import actions
+- Prefer explicit shared-import action types over anonymous chooser callbacks when the flow has multiple destinations.
 - Prefer the shared Android-Iconics icon packages for UI icons instead of hand-authored vector paths when a suitable icon already exists.
 - The app assumes Android 13+ behavior; do not add pre-Tiramisu compatibility branches unless explicitly requested.
 - Image cropping uses CanHub `CropImageView` hosted inside `ImageCropActivity`, not the deprecated contract/activity wrapper flow.
@@ -43,6 +48,7 @@
 - Compose has two preview levels:
   - inline block previews may stay lightweight for editor responsiveness
   - the explicit document preview should use the same prepared print pipeline as actual printing
+- In `TextFragment`, prefer small document-mutation helpers over repeating direct `CanvasDocumentEditor.*(currentDocument, ...)` calls throughout the UI code.
 - Image resizers and ditherers are interface-based:
   - `ImageResizer.kt` defines the resizer interface, implementations, and registry
   - `ImageDitherer.kt` defines the ditherer interface, implementations, and registry
@@ -50,6 +56,10 @@
 - For custom resizers, bounded decode width matters:
   - do not decode full-resolution camera images just to downscale to printer width
   - use the resizer’s `decodeWidth(...)` policy so custom resizers still get headroom without huge allocations
+- Prefer `val` by default:
+  - use `var` only when the state is genuinely mutable and forcing `val` would make the code more complicated or less clear
+  - real Android/BLE/dialog/lifecycle coordinator state is an acceptable `var` use case
+  - prioritize removing one-shot setup vars and duplicated mutable update paths before trying to eliminate necessary mutable state
 
 ## Verification
 - Unit and build check: `./gradlew :app:assembleDebug :app:testDebugUnitTest`

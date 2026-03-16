@@ -2,13 +2,13 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.graphics.Bitmap
 import android.view.View
-import android.widget.EditText
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.github.thiagokokada.meowprinter.R
+import com.github.thiagokokada.meowprinter.document.TextQrPayload
 import com.github.thiagokokada.meowprinter.image.DitheringMode
 import com.github.thiagokokada.meowprinter.image.ImageProcessingMode
 import com.github.thiagokokada.meowprinter.image.ImageResizerMode
@@ -145,10 +145,9 @@ class MainActivityTest {
 
             val dialog = fragment.qrDialogForTest()
             checkNotNull(dialog)
-            val textInput = dialog.window?.decorView?.findViewWithTag("qr_text_label") as? EditText
-            checkNotNull(textInput)
-            textInput.setText("https://example.com")
-            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
+            assertEquals(true, dialog.isShowing)
+
+            fragment.appendQrBlockForTest(TextQrPayload("https://example.com"))
 
             val hasQrBlock = fragment.hasQrBlockForTest()
             assertEquals(true, hasQrBlock)

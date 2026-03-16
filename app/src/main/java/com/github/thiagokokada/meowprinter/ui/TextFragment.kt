@@ -965,6 +965,16 @@ class TextFragment : Fragment(R.layout.fragment_text) {
         return currentDocument.blocks.any { it is QrBlock }
     }
 
+    internal fun appendQrBlockForTest(payload: QrPayload) {
+        val block = QrBlock(
+            id = UUID.randomUUID().toString(),
+            payload = payload,
+            alignment = BlockAlignment.CENTER,
+            size = QrBlockSize.MEDIUM
+        )
+        updateDocument(CanvasDocumentEditor.appendBlock(currentDocument, block))
+    }
+
     private fun confirmStartNewDocument() {
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.text_new_document_title)

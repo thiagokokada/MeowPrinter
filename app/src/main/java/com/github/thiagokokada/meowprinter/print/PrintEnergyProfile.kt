@@ -9,6 +9,9 @@ enum class PrintEnergyProfile(
     DARK("Dark", 75),
     CUSTOM("Custom", null);
 
+    val spinnerLabel: String
+        get() = presetPercent?.let { "$displayName ($it%)" } ?: displayName
+
     fun toEnergy(customPercent: Int): Int {
         return PrintEnergy.fromPercent(presetPercent ?: customPercent)
     }

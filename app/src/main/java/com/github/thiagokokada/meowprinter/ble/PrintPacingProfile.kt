@@ -21,6 +21,9 @@ enum class PrintPacingProfile(
         presetPercent = null
     );
 
+    val spinnerLabel: String
+        get() = presetPercent?.let { "$displayName ($it%)" } ?: displayName
+
     fun toPacing(customPercent: Int): PrintPacing {
         return PrintPacing.fromPercent(presetPercent ?: customPercent)
     }

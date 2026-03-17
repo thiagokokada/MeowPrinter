@@ -266,7 +266,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         printPacingProfileAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
-            PrintPacingProfile.entries.map { it.displayName }
+            PrintPacingProfile.entries.map { it.spinnerLabel }
         ).also { adapter ->
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
@@ -300,7 +300,7 @@ class MainActivity : AppCompatActivity(), TextFragment.Host {
         energyProfileAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
-            PrintEnergyProfile.entries.map { it.displayName }
+            PrintEnergyProfile.entries.map { it.spinnerLabel }
         ).also { adapter ->
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }

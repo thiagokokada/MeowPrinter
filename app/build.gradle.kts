@@ -28,8 +28,8 @@ android {
         applicationId = "com.github.thiagokokada.meowprinter"
         minSdk = 33
         targetSdk = 36
-        versionCode = releaseVersionCodeOverride ?: 1
-        versionName = releaseVersionNameOverride ?: "1.0"
+        versionCode = releaseVersionCodeOverride ?: 99999
+        versionName = releaseVersionNameOverride ?: "dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

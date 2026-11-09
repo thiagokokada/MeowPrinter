@@ -5,7 +5,10 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
+import android.util.Log
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
+import com.github.thiagokokada.meowprinter.print.Mxw01Protocol
+import com.github.thiagokokada.meowprinter.print.PrinterProtocolProfile
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -20,10 +23,17 @@ import kotlin.coroutines.resumeWithException
 
 class BlePrinterManager(
     context: Context,
-    private val onDisconnected: () -> Unit
+    val protocolProfile: PrinterProtocolProfile = PrinterProtocolProfile.CAT,
+    private val onDisconnected: (BlePrinterManager) -> Unit
 ) : BleManager(context) {
     private var txCharacteristic: BluetoothGattCharacteristic? = null
     private var rxCharacteristic: BluetoothGattCharacteristic? = null
+
+    private var mxw01DataCharacteristic: BluetoothGattCharacteristic? = null
+
+    private var mxw01Session: Mxw01Session? = null
+    private var notificationsEnabled = false
+
     private var readySignal = CompletableDeferred<Unit>()
     private var suppressDisconnectCallback = false
 
@@ -31,7 +41,9 @@ class BlePrinterManager(
         private set
 
     val isPrinterReady: Boolean
-        get() = isConnected && txCharacteristic != null && rxCharacteristic != null
+        get() = isConnected && txCharacteristic != null && rxCharacteristic != null &&
+            (protocolProfile != PrinterProtocolProfile.MXW01 ||
+                (notificationsEnabled && mxw01DataCharacteristic != null && mxw01Session?.isActive == true))
 
     init {
         setConnectionObserver(object : ConnectionObserver {
@@ -47,7 +59,7 @@ class BlePrinterManager(
 
             override fun onDeviceDisconnected(device: BluetoothDevice, reason: Int) {
                 if (!suppressDisconnectCallback) {
-                    onDisconnected()
+                    onDisconnected(this@BlePrinterManager)
                 }
             }
         })
@@ -101,8 +113,74 @@ class BlePrinterManager(
         }
     }
 
+
+    suspend fun printMxw01(
+        rows: List<BooleanArray>,
+        intensity: Int = 93,
+        pacing: PrintPacing = PrintPacingProfile.BALANCED.toPacing(100)
+    ) {
+        check(protocolProfile == PrinterProtocolProfile.MXW01) { "MXW01 mode is not enabled." }
+        check(isPrinterReady) { "Printer is not ready." }
+
+        val dataChannel = mxw01DataCharacteristic
+            ?: throw IOException("MXW01 AE03 channel unavailable.")
+
+        val image = Mxw01Protocol.encodeImage(rows)
+        val paddedLines = image.size / Mxw01Protocol.BYTES_PER_ROW
+        val session = mxw01Session ?: throw IOException("MXW01 session unavailable.")
+
+        session.transaction {
+            withTimeout(10_000) { send(Mxw01Protocol.setIntensity(intensity)) }
+            val status = session.request(0xA1) { send(Mxw01Protocol.getStatus()) }
+            Log.d("MeowMXW01", "Status payload: ${status.toHexString()}")
+
+            session.withResponse(0xAA) { completed ->
+                val accepted = session.request(0xA9) {
+                    send(Mxw01Protocol.startPrint(paddedLines))
+                }
+                if (accepted.firstOrNull()?.toInt() != 0) {
+                    throw IOException("MXW01 rejected print request.")
+                }
+
+                val chunkSize = (negotiatedMtu - 3).coerceIn(20, 244)
+                for (offset in image.indices step chunkSize) {
+                    val chunk = image.copyOfRange(offset, minOf(offset + chunkSize, image.size))
+                    withTimeout(10_000) {
+                        await(writeCharacteristic(dataChannel, chunk, preferredWriteType(dataChannel)))
+                    }
+                    // Preserve the pacing used by the physically tested implementation.
+                    delay((pacing.rowCommandDelayMs + 20L).coerceIn(8L, 50L))
+                }
+
+                withTimeout(10_000) { send(Mxw01Protocol.finishPrint()) }
+                withTimeout(60_000) { completed.await() }
+            }
+        }
+    }
+
+    suspend fun getMxw01Battery(): Int {
+        check(protocolProfile.supportsBattery) {
+            "Battery query only supported in MXW01 mode."
+        }
+        check(isPrinterReady) { "Printer is not ready." }
+        val session = mxw01Session ?: throw IOException("MXW01 session unavailable.")
+        return session.transaction {
+            val payload = session.request(0xAB) { send(Mxw01Protocol.getBattery()) }
+            payload[0].toInt() and 0xFF
+        }
+    }
+
+    private fun ByteArray.toHexString(): String =
+        joinToString(" ") {
+            "%02X".format(it.toInt() and 0xFF)
+        }
+
+
     fun release() {
         suppressDisconnectCallback = true
+        mxw01Session?.invalidate()
+        mxw01Session = null
+        notificationsEnabled = false
         if (isConnected) {
             disconnect().enqueue()
         }
@@ -118,6 +196,7 @@ class BlePrinterManager(
 
             txCharacteristic = service?.getCharacteristic(CatPrinterProtocol.txCharacteristicUuid)
             rxCharacteristic = service?.getCharacteristic(CatPrinterProtocol.rxCharacteristicUuid)
+            mxw01DataCharacteristic = service?.getCharacteristic(Mxw01Protocol.dataCharacteristicUuid)
 
             val txValid = txCharacteristic?.properties?.let { properties ->
                 properties and (BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0
@@ -125,19 +204,52 @@ class BlePrinterManager(
             val rxValid = rxCharacteristic?.properties?.let { properties ->
                 properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0
             } == true
-            return txValid && rxValid
+            val dataValid =
+                mxw01DataCharacteristic?.properties?.let { properties ->
+                    properties and (
+                        BluetoothGattCharacteristic.PROPERTY_WRITE or
+                            BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE
+                    ) != 0
+                } == true
+
+            return txValid && rxValid && (protocolProfile != PrinterProtocolProfile.MXW01 || dataValid)
         }
 
         @Deprecated("Required override from Nordic BleManager API.")
         override fun initialize() {
             val rx = requireNotNull(rxCharacteristic)
+            mxw01Session?.invalidate()
+            val session = if (protocolProfile == PrinterProtocolProfile.MXW01) {
+                Mxw01Session { failedSession ->
+                    // No wire transaction IDs: recover the connection after ambiguity.
+                    if (mxw01Session === failedSession) {
+                        release()
+                        onDisconnected(this@BlePrinterManager)
+                    }
+                }
+            } else null
+            mxw01Session = session
+            notificationsEnabled = false
             setNotificationCallback(rx).with { _, data ->
                 val value = data.value ?: return@with
+                if (session != null) {
+                    Log.d("MeowMXW01", "RX: ${value.toHexString()}")
+                    session.onNotification(value)
+                }
                 if (value.contentEquals(CatPrinterProtocol.readyNotification) && !readySignal.isCompleted) {
                     readySignal.complete(Unit)
                 }
             }
-            enableNotifications(rx).enqueue()
+            enableNotifications(rx)
+                .done { if (mxw01Session === session) notificationsEnabled = true }
+                .fail { _, _ ->
+                    if (session != null && mxw01Session === session) {
+                        session.invalidate()
+                        release()
+                        onDisconnected(this@BlePrinterManager)
+                    }
+                }
+                .enqueue()
             requestMtu(MAX_MTU)
                 .with { _, mtu -> negotiatedMtu = mtu }
                 .fail { _, _ -> negotiatedMtu = DEFAULT_MTU }
@@ -150,6 +262,10 @@ class BlePrinterManager(
             txCharacteristic = null
             rxCharacteristic = null
             negotiatedMtu = DEFAULT_MTU
+            mxw01DataCharacteristic = null
+            notificationsEnabled = false
+            mxw01Session?.invalidate()
+            mxw01Session = null
         }
     }
 

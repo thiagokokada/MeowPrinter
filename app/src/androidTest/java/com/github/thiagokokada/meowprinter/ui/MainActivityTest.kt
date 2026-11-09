@@ -2,6 +2,7 @@ package com.github.thiagokokada.meowprinter.ui
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import android.view.View
 import android.widget.Spinner
@@ -21,10 +22,12 @@ import com.github.thiagokokada.meowprinter.image.ImageResizerMode
 import com.github.thiagokokada.meowprinter.image.PreparedPrintImage
 import com.github.thiagokokada.meowprinter.print.PrintEnergyProfile
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class MainActivityTest {
@@ -65,6 +68,41 @@ class MainActivityTest {
                 putExtra(Intent.EXTRA_STREAM, sharedImageUri)
             }
         )
+    }
+
+    @Test
+    fun savedMxw01DisablesUnverifiedPaperSettingsWithoutHardware() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        // No address: do not scan or connect to external hardware in this smoke test.
+        AppSettings(context).selectedPrinterName = "MXW01"
+        launchMainActivity { activity ->
+            activity.findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId =
+                R.id.navigation_settings
+            assertEquals(false, activity.findViewById<View>(R.id.input_layout_paper_move_steps).isEnabled)
+            assertEquals(false, activity.findViewById<View>(R.id.button_paper_steps_25).isEnabled)
+            assertEquals(false, activity.findViewById<View>(R.id.spinner_end_paper_passes).isEnabled)
+            assertEquals(
+                activity.getString(R.string.mxw01_paper_movement_unsupported),
+                activity.findViewById<TextView>(R.id.paper_move_steps_subtitle).text.toString()
+            )
+            assertEquals(
+                activity.getString(R.string.mxw01_pacing_subtitle),
+                activity.findViewById<TextView>(R.id.print_pacing_subtitle).text.toString()
+            )
+            assertEquals(false, activity.findViewById<View>(R.id.printer_value).isClickable)
+        }
+    }
+
+    @Test
+    fun classicPaperSettingsRemainAvailableAndBatteryLabelDoesNotClaimPercentage() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        AppSettings(context).selectedPrinterName = "GT01"
+        launchMainActivity { activity ->
+            assertEquals(true, activity.findViewById<View>(R.id.input_layout_paper_move_steps).isEnabled)
+            assertEquals(true, activity.findViewById<View>(R.id.spinner_end_paper_passes).isEnabled)
+            assertEquals(" · Battery: 68", activity.getString(R.string.mxw01_battery_raw, 68))
+            assertEquals(" · Battery: --", activity.getString(R.string.mxw01_battery_unknown))
+        }
     }
 
     @Test
@@ -303,6 +341,95 @@ class MainActivityTest {
             val hasQrBlock = fragment.hasQrBlockForTest()
             assertEquals(true, hasQrBlock)
         }
+    }
+
+    @Test
+    fun changingDitheringFinishesPreparationAndRefreshesPreview() {
+        val image = createImageForPreparation()
+        try {
+            launchMainActivity { it.prepareSelectedImageForTest(Uri.fromFile(image)) }
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            instrumentation.waitForIdleSync()
+
+            for (mode in listOf(DitheringMode.THRESHOLD, DitheringMode.ATKINSON, DitheringMode.ORDERED_4X4)) {
+                scenario?.onActivity { activity ->
+                    activity.findViewById<Spinner>(R.id.spinner_dithering).setSelection(mode.ordinal)
+                }
+                instrumentation.waitForIdleSync()
+                assertPreparationFinished(mode.displayName)
+            }
+        } finally {
+            image.delete()
+        }
+    }
+
+    @Test
+    fun changingProcessingAndResizerFinishesPreparation() {
+        val image = createImageForPreparation()
+        try {
+            launchMainActivity { it.prepareSelectedImageForTest(Uri.fromFile(image)) }
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            instrumentation.waitForIdleSync()
+            scenario?.onActivity { activity ->
+                activity.findViewById<Spinner>(R.id.spinner_image_processing)
+                    .setSelection(ImageProcessingMode.HIGH_CONTRAST.ordinal)
+            }
+            instrumentation.waitForIdleSync()
+            assertPreparationFinished(ImageProcessingMode.HIGH_CONTRAST.displayName)
+
+            scenario?.onActivity { activity ->
+                activity.findViewById<Spinner>(R.id.spinner_image_resizer)
+                    .setSelection(ImageResizerMode.AREA_AVERAGE.ordinal)
+            }
+            instrumentation.waitForIdleSync()
+            assertPreparationFinished(ImageResizerMode.AREA_AVERAGE.displayName)
+        } finally {
+            image.delete()
+        }
+    }
+
+    @Test
+    fun failedImagePreparationClearsLoadingIndicator() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val missingImage = File.createTempFile("missing-image-", ".png", context.cacheDir)
+        check(missingImage.delete())
+        launchMainActivity { it.prepareSelectedImageForTest(Uri.fromFile(missingImage)) }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        scenario?.onActivity { activity ->
+            assertEquals(View.GONE, activity.findViewById<View>(R.id.progress_indicator).visibility)
+            assertEquals(
+                activity.getString(R.string.image_preparation_failed),
+                activity.findViewById<TextView>(R.id.image_status_value).text.toString()
+            )
+            assertEquals(true, activity.findViewById<View>(R.id.button_image_connection).isEnabled)
+        }
+    }
+
+    private fun assertPreparationFinished(expectedLabel: String) {
+        scenario?.onActivity { activity ->
+            assertEquals(View.GONE, activity.findViewById<View>(R.id.progress_indicator).visibility)
+            assertEquals(
+                activity.getString(R.string.image_ready_to_print),
+                activity.findViewById<TextView>(R.id.image_status_value).text.toString()
+            )
+            assertTrue(activity.findViewById<TextView>(R.id.image_selection_value).text.contains(expectedLabel))
+            assertEquals(true, activity.findViewById<View>(R.id.button_image_connection).isEnabled)
+        }
+    }
+
+    private fun createImageForPreparation(): File {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val image = File.createTempFile("dithering-regression-", ".png", context.cacheDir)
+        val bitmap = Bitmap.createBitmap(384, 32, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(Color.LTGRAY)
+            setPixel(0, 0, Color.BLACK)
+        }
+        try {
+            image.outputStream().use { check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+        } finally {
+            bitmap.recycle()
+        }
+        return image
     }
 
     @Test

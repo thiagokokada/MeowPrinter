@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.zxing.core)
     implementation("com.mikepenz:fontawesome-typeface:5.13.3.2-kotlin@aar")
     testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
     testImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

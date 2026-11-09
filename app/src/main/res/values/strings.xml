@@ -109,6 +109,11 @@
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
     <string name="printer_label">Printer</string>
+    <string name="mxw01_battery_raw">" · Battery: %1$d"</string>
+    <string name="mxw01_battery_unknown">" · Battery: --"</string>
+    <string name="mxw01_battery_refresh_description">%1$s. Tap to refresh the battery reading reported by the printer. Its scale has not been confirmed.</string>
+    <string name="mxw01_paper_movement_unsupported">Manual paper movement and end-of-job feed settings are not supported for MXW01.</string>
+    <string name="mxw01_pacing_subtitle">Controls BLE transfer pacing, not motor speed. Slower transfers may improve reliability.</string>
     <string name="status_label">Status</string>
     <string name="dithering_label">Dithering</string>
     <string name="image_processing_label">Image processing</string>

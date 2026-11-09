@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.RequiresPermission
 import com.github.thiagokokada.meowprinter.print.CatPrinterProtocol
+import com.github.thiagokokada.meowprinter.print.PrinterProtocolProfile
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -91,6 +92,8 @@ class BlePrinterScanner(context: Context) {
         val serviceUuids = scanRecord?.serviceUuids.orEmpty().map { it.uuid }
         return device.name in knownNames ||
             scanRecord?.deviceName in knownNames ||
+            PrinterProtocolProfile.forAdvertisedName(device.name) == PrinterProtocolProfile.MXW01 ||
+            PrinterProtocolProfile.forAdvertisedName(scanRecord?.deviceName) == PrinterProtocolProfile.MXW01 ||
             serviceUuids.any { uuid ->
                 uuid == CatPrinterProtocol.primaryServiceUuid || uuid == CatPrinterProtocol.secondaryServiceUuid
             }
